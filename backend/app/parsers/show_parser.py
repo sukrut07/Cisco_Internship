@@ -17,6 +17,7 @@ from app.parsers.acl_parser import parse_access_lists
 from app.parsers.dhcp_parser import parse_dhcp_binding, parse_dhcp_pool
 from app.parsers.nat_parser import parse_nat_translations, parse_nat_statistics
 from app.parsers.trunk_parser import parse_interfaces_trunk
+from app.parsers.dns_parser import parse_show_hosts, parse_nslookup
 
 
 # ---------------------------------------------------------------------------
@@ -35,6 +36,9 @@ _PARSER_REGISTRY: dict[str, Any] = {
     "show ip nat translations": parse_nat_translations,
     "show ip nat statistics": parse_nat_statistics,
     "show interfaces trunk": parse_interfaces_trunk,
+    "show hosts": parse_show_hosts,
+    "show ip hosts": parse_show_hosts,
+    "nslookup": parse_nslookup,
 }
 
 

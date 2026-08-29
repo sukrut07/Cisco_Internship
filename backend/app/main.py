@@ -5,6 +5,7 @@ Start with: uvicorn app.main:app --reload
 """
 from __future__ import annotations
 
+import time
 import uuid
 from contextlib import asynccontextmanager
 
@@ -16,10 +17,11 @@ from pydantic import ValidationError
 from app.core.config import get_settings
 from app.core.database import Base, create_all_tables, engine
 from app.core.exceptions import NetSageException
-from app.core.logging_config import configure_logging
+from app.core.logging_config import configure_logging, get_logger
 
 settings = get_settings()
 configure_logging(settings.log_level)
+logger = get_logger("app.main")
 
 
 # ---------------------------------------------------------------------------
@@ -29,8 +31,8 @@ configure_logging(settings.log_level)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle."""
-    import logging
-    logger = logging.getLogger(__name__)
+    # Check and warn about production defaults
+    settings.warn_production_defaults()
 
     # Create all tables (Alembic handles migrations in production)
     from app.models import _import_all_models
@@ -76,15 +78,44 @@ app.add_middleware(
 
 
 # ---------------------------------------------------------------------------
-# Request ID Middleware
+# HTTP Security & Timing Middleware
 # ---------------------------------------------------------------------------
 
 @app.middleware("http")
-async def add_request_id(request: Request, call_next):
+async def security_and_timing_middleware(request: Request, call_next):
+    # 1. Request Body Size Protection
+    content_length = request.headers.get("content-length")
+    max_bytes = settings.max_request_body_mb * 1024 * 1024
+    if content_length and int(content_length) > max_bytes:
+        return JSONResponse(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            content={
+                "error": {
+                    "code": "REQUEST_ENTITY_TOO_LARGE",
+                    "message": f"Request body exceeds maximum allowed size of {settings.max_request_body_mb}MB.",
+                }
+            },
+        )
+
+    # 2. Request ID & Timing
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
+    start_time = time.perf_counter()
+
     response = await call_next(request)
+
+    duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
     response.headers["X-Request-ID"] = request_id
+    response.headers["X-Process-Time-Ms"] = str(duration_ms)
+
+    logger.info(
+        "HTTP %s %s | Status: %d | Duration: %.2fms | Request-ID: %s",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+        request_id,
+    )
     return response
 
 
@@ -142,6 +173,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 from app.api.routes.health import router as health_router
 from app.api.routes.cases import router as cases_router
+from app.api.routes.evidence import router as evidence_router
 from app.api.routes.diagnosis import router as diagnosis_router
 from app.api.routes.rules import router as rules_router
 from app.api.routes.reviews import router as reviews_router
@@ -149,11 +181,13 @@ from app.api.routes.verification import router as verification_router
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.responsible_ai import router as responsible_ai_router
 from app.api.routes.evaluation import router as evaluation_router
+from app.api.routes.audit import router as audit_router
 
 API_PREFIX = "/api/v1"
 
 app.include_router(health_router)
 app.include_router(cases_router, prefix=API_PREFIX)
+app.include_router(evidence_router, prefix=API_PREFIX)
 app.include_router(diagnosis_router, prefix=API_PREFIX)
 app.include_router(rules_router, prefix=API_PREFIX)
 app.include_router(reviews_router, prefix=API_PREFIX)
@@ -161,6 +195,7 @@ app.include_router(verification_router, prefix=API_PREFIX)
 app.include_router(dashboard_router, prefix=API_PREFIX)
 app.include_router(responsible_ai_router, prefix=API_PREFIX)
 app.include_router(evaluation_router, prefix=API_PREFIX)
+app.include_router(audit_router, prefix=API_PREFIX)
 
 
 @app.get("/", include_in_schema=False)
@@ -170,4 +205,14 @@ def root():
         "version": settings.app_version,
         "docs": "/docs",
         "health": "/health",
+        "ready": "/ready",
     }
+
+
+@app.get("/ready", tags=["Health"], summary="Readiness check")
+def readiness_check():
+    from app.core.database import check_database_connection
+    db_ok = check_database_connection()
+    if not db_ok:
+        return JSONResponse(status_code=503, content={"status": "not_ready", "reason": "database_unavailable"})
+    return {"status": "ready", "service": settings.app_name}

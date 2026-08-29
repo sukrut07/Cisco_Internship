@@ -45,13 +45,27 @@ def is_safe_case_id(case_id: str) -> bool:
     return bool(re.match(r"^[A-Z0-9\-_]{1,50}$", case_id))
 
 
-def redact_secrets(data: dict) -> dict:
+SENSITIVE_KEY_SUBSTRINGS = {
+    "api_key", "apikey", "secret", "password", "token", "auth", "credential", "jwt", "bearer", "private_key"
+}
+
+
+def redact_secrets(data: Any) -> Any:
     """
-    Return a copy of a dict with sensitive keys redacted.
-    Used to prevent secrets leaking into logs.
+    Recursively return a copy of data with sensitive keys and values redacted.
+    Protects logs from accidental secret leaks.
     """
-    sensitive_keys = {"api_key", "ai_api_key", "secret_key", "password", "token"}
-    return {
-        k: "***REDACTED***" if k.lower() in sensitive_keys else v
-        for k, v in data.items()
-    }
+    if isinstance(data, dict):
+        result = {}
+        for k, v in data.items():
+            k_lower = str(k).lower()
+            if any(sub in k_lower for sub in SENSITIVE_KEY_SUBSTRINGS):
+                result[k] = "***REDACTED***"
+            else:
+                result[k] = redact_secrets(v)
+        return result
+    elif isinstance(data, list):
+        return [redact_secrets(item) for item in data]
+    elif isinstance(data, tuple):
+        return tuple(redact_secrets(item) for item in data)
+    return data

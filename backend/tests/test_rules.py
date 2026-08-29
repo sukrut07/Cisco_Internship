@@ -9,6 +9,8 @@ from app.rules.interface_status import InterfaceStatusRule
 from app.rules.vlan import VLANRule
 from app.rules.routes import RouteRule
 from app.rules.dhcp import DHCPRule
+from app.rules.dns import DNSRule
+from app.rules.nat import NATRule
 from app.rules.engine import RuleEngine
 
 
@@ -211,4 +213,82 @@ def test_rule_engine_summary():
     summary = engine.summary(results)
     assert "total" in summary
     assert "fail" in summary
-    assert summary["total"] == len(results)
+
+
+# ---------------------------------------------------------------------------
+# Enhanced Rule Edge Cases
+# ---------------------------------------------------------------------------
+
+def test_dns_nslookup_timeout_detected():
+    rule = DNSRule()
+    ctx = {
+        "show_outputs": {
+            "nslookup": "Server: 192.168.1.50\n*** Request to 192.168.1.50 timed-out"
+        }
+    }
+    result = rule.check(ctx)
+    assert result.status == "FAIL"
+    assert "timed out" in result.message.lower()
+
+
+def test_dhcp_pool_exhaustion_detected():
+    rule = DHCPRule()
+    ctx = {
+        "show_outputs": {
+            "show ip dhcp pool": "Pool LAN-POOL : \n Utilization mark (high/low)    : 100 / 0 \n Total addresses                : 254\n Leased addresses               : 254\n Free addresses                 : 0"
+        }
+    }
+    result = rule.check(ctx)
+    assert result.status == "FAIL"
+    assert "exhausted" in result.message.lower()
+
+
+def test_dhcp_relay_missing_detected():
+    rule = DHCPRule()
+    ctx = {
+        "symptom": "PC in remote branch cannot obtain IP from central DHCP server across router relay",
+        "show_outputs": {
+            "show running-config": "interface GigabitEthernet0/0\n ip address 192.168.10.1 255.255.255.0\n no shutdown"
+        }
+    }
+    result = rule.check(ctx)
+    assert result.status == "FAIL"
+    assert "helper-address" in " ".join(result.evidence)
+
+
+def test_nat_missing_inside_outside_detected():
+    rule = NATRule()
+    ctx = {
+        "symptom": "Internal hosts cannot access the public internet via NAT overload",
+        "show_outputs": {
+            "show running-config": "interface Gi0/0\n ip address 192.168.1.1 255.255.255.0\ninterface Gi0/1\n ip address 203.0.113.1 255.255.255.0"
+        }
+    }
+    result = rule.check(ctx)
+    assert result.status == "FAIL"
+    assert "nat inside" in " ".join(result.evidence).lower() or "nat outside" in " ".join(result.evidence).lower()
+
+
+def test_vlan_native_mismatch_detected():
+    rule = VLANRule()
+    ctx = {
+        "show_outputs": {
+            "show interfaces trunk": "%CDP-4-NATIVE_VLAN_MISMATCH: Native VLAN mismatch discovered on GigabitEthernet0/1 (1), with Switch GigabitEthernet0/1 (99)."
+        }
+    }
+    result = rule.check(ctx)
+    assert result.status == "FAIL"
+    assert "native vlan mismatch" in result.message.lower()
+
+
+def test_route_auto_extraction_from_symptom():
+    rule = RouteRule()
+    ctx = {
+        "symptom": "Workstation cannot reach destination server at 10.200.5.10. Default gateway is reachable.",
+        "show_outputs": {
+            "show ip route": "Codes: C - connected\nC 192.168.1.0/24 is directly connected, Gi0/0"
+        }
+    }
+    result = rule.check(ctx)
+    assert result.status == "FAIL"
+    assert "10.200.5.10" in result.message

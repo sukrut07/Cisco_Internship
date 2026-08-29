@@ -157,3 +157,33 @@ def test_workflow_original_ai_diagnosis_saved(client):
     data = resp.json()
     assert data["original_ai_diagnosis"] is not None
     assert "root_cause" in data["original_ai_diagnosis"]
+
+
+def test_review_edit_without_body_fails(client):
+    """EDIT review without edited_diagnosis must fail validation."""
+    diag_id = _create_case_and_diagnose(client)
+    resp = client.post(
+        "/api/v1/cases/TEST-001/review",
+        json={"diagnosis_id": diag_id, "decision": "EDITED", "reviewer": "S1"},
+    )
+    assert resp.status_code == 422
+
+
+def test_review_invalid_decision_fails(client):
+    """Invalid decision string must fail validation."""
+    diag_id = _create_case_and_diagnose(client)
+    resp = client.post(
+        "/api/v1/cases/TEST-001/review",
+        json={"diagnosis_id": diag_id, "decision": "APPROVED", "reviewer": "S1"},
+    )
+    assert resp.status_code == 422
+
+
+def test_review_nonexistent_diagnosis_fails(client):
+    """Reviewing a non-existent diagnosis ID must return 404."""
+    client.post("/api/v1/cases", json=SAMPLE_CASE_PAYLOAD)
+    resp = client.post(
+        "/api/v1/cases/TEST-001/review",
+        json={"diagnosis_id": 99999, "decision": "ACCEPTED", "reviewer": "S1"},
+    )
+    assert resp.status_code == 404

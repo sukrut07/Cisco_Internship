@@ -92,6 +92,26 @@ class AIResponseValidationError(NetSageException):
     error_code = "AI_RESPONSE_VALIDATION_ERROR"
 
 
+class AIProviderTimeout(NetSageException):
+    status_code = 504
+    error_code = "AI_PROVIDER_TIMEOUT"
+
+
+class AIAuthenticationError(NetSageException):
+    status_code = 502
+    error_code = "AI_AUTHENTICATION_ERROR"
+
+
+class AIQuotaError(NetSageException):
+    status_code = 429
+    error_code = "AI_QUOTA_EXCEEDED"
+
+
+class AIUnavailableError(NetSageException):
+    status_code = 503
+    error_code = "AI_UNAVAILABLE"
+
+
 # ---------------------------------------------------------------------------
 # Parser Errors
 # ---------------------------------------------------------------------------

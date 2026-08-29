@@ -10,8 +10,12 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.exceptions import (
+    AIAuthenticationError,
     AIProviderError,
+    AIProviderTimeout,
+    AIQuotaError,
     AIResponseParseError,
+    AIUnavailableError,
     CaseNotFoundError,
     DiagnosisNotFoundError,
 )
@@ -41,10 +45,8 @@ def diagnose_case(
         return diagnosis_service.run_diagnosis(db, case_id, request)
     except CaseNotFoundError as exc:
         raise HTTPException(status_code=404, detail={"code": exc.error_code, "message": exc.message})
-    except AIProviderError as exc:
-        raise HTTPException(status_code=502, detail={"code": exc.error_code, "message": exc.message})
-    except AIResponseParseError as exc:
-        raise HTTPException(status_code=502, detail={"code": exc.error_code, "message": exc.message})
+    except (AIProviderTimeout, AIQuotaError, AIUnavailableError, AIAuthenticationError, AIProviderError, AIResponseParseError) as exc:
+        raise HTTPException(status_code=exc.status_code, detail={"code": exc.error_code, "message": exc.message})
     except Exception as exc:
         raise HTTPException(
             status_code=500,

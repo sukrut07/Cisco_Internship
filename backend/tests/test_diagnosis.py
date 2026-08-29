@@ -1,5 +1,5 @@
-"""Tests for the Diagnosis API and pipeline."""
 import pytest
+from fastapi.testclient import TestClient
 from tests.conftest import SAMPLE_CASE_PAYLOAD
 
 
@@ -141,3 +141,88 @@ def test_ai_evidence_grounding_valid_source():
     show_outputs = {"show ip route": "route missing from routing table in output"}
     result = parser.parse(valid_json, show_outputs)
     assert result["grounding_status"] in ("GROUNDED", "PARTIALLY_GROUNDED")
+
+
+def test_comparison_conflict_scenario():
+    """Test AI vs rule conflict: AI says DNS, rules say Missing Route."""
+    from app.services.comparison_service import comparison_service
+    from app.rules.base import RuleCheckResult
+
+    rule_results = [
+        RuleCheckResult(
+            rule_name="missing_route",
+            status="FAIL",
+            severity="HIGH",
+            message="No route to 192.168.30.0/24 in routing table.",
+            evidence=["show ip route: missing"],
+        )
+    ]
+    comparison = comparison_service.compare(
+        ai_root_cause="DNS server 8.8.8.8 unreachable causing resolution failure",
+        ai_osi_layer="Layer 7",
+        rule_results=rule_results,
+        grounding_status="GROUNDED",
+    )
+    assert comparison["agreement_type"] in ("CONFLICT", "DISAGREEMENT")
+    assert comparison["requires_human_review"] is True
+
+
+def test_comparison_partial_agreement_scenario():
+    """Test partial agreement: AI says routing problem, rule detected missing route."""
+    from app.services.comparison_service import comparison_service
+    from app.rules.base import RuleCheckResult
+
+    rule_results = [
+        RuleCheckResult(
+            rule_name="missing_route",
+            status="FAIL",
+            severity="HIGH",
+            message="No route to destination network.",
+            evidence=["show ip route"],
+        )
+    ]
+    comparison = comparison_service.compare(
+        ai_root_cause="Routing issue: missing route to remote host",
+        ai_osi_layer="Layer 3",
+        rule_results=rule_results,
+        grounding_status="GROUNDED",
+    )
+    assert comparison["agreement_type"] in ("STRONG", "PARTIAL", "AGREEMENT")
+    assert comparison["requires_human_review"] is True
+
+
+def test_comparison_no_rule_evidence_scenario():
+    """When rules detect nothing (PASS/NOT_CHECKED), agreement_type should reflect no rule evidence."""
+    from app.services.comparison_service import comparison_service
+    from app.rules.base import RuleCheckResult
+
+    rule_results = [
+        RuleCheckResult(
+            rule_name="vlan_check",
+            status="NOT_CHECKED",
+            severity="LOW",
+            message="No VLAN info",
+        )
+    ]
+    comparison = comparison_service.compare(
+        ai_root_cause="Physical cable unplugged",
+        ai_osi_layer="Layer 1",
+        rule_results=rule_results,
+        grounding_status="GROUNDED",
+    )
+    assert comparison["requires_human_review"] is True
+
+
+def test_ai_provider_timeout_exception(client: TestClient, monkeypatch):
+    """Verify that an AI provider timeout returns HTTP 504 Gateway Timeout."""
+    from app.core.exceptions import AIProviderTimeout
+
+    def mock_diagnose_timeout(*args, **kwargs):
+        raise AIProviderTimeout("Request to AI provider timed out after 30s.")
+
+    from app.services.diagnosis_service import diagnosis_service
+    monkeypatch.setattr(diagnosis_service, "run_diagnosis", mock_diagnose_timeout)
+
+    resp = client.post("/api/v1/cases/TEST-001/diagnose")
+    assert resp.status_code == 504
+    assert resp.json()["detail"]["code"] == "AI_PROVIDER_TIMEOUT"

@@ -113,5 +113,33 @@ def test_case_id_normalized_to_uppercase(client):
     payload["case_id"] = "test-001"
     response = client.post("/api/v1/cases", json=payload)
     assert response.status_code == 201
-    data = response.json()
-    assert data["case_id"] == "TEST-001"
+    assert response.json()["case_id"] == "TEST-001"
+
+
+def test_oversized_request_rejection(client):
+    """Requests exceeding MAX_REQUEST_BODY_MB must receive HTTP 413."""
+    huge_headers = {"Content-Length": str(10 * 1024 * 1024)}  # 10 MB declared
+    response = client.post("/api/v1/cases", headers=huge_headers, json=SAMPLE_CASE_PAYLOAD)
+    assert response.status_code == 413
+    assert response.json()["error"]["code"] == "REQUEST_ENTITY_TOO_LARGE"
+
+
+def test_secret_redaction_security():
+    from app.core.security import redact_secrets
+
+    sensitive_dict = {
+        "api_key": "sk-proj-secret-12345",
+        "nested": {
+            "password": "super-secret-db-pass",
+            "auth_token": "bearer eyJ...",
+            "normal_field": "public_data",
+        },
+        "list_data": [{"bearer": "token123"}, "clean_string"],
+    }
+    redacted = redact_secrets(sensitive_dict)
+    assert redacted["api_key"] == "***REDACTED***"
+    assert redacted["nested"]["password"] == "***REDACTED***"
+    assert redacted["nested"]["auth_token"] == "***REDACTED***"
+    assert redacted["nested"]["normal_field"] == "public_data"
+    assert redacted["list_data"][0]["bearer"] == "***REDACTED***"
+    assert redacted["list_data"][1] == "clean_string"

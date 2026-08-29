@@ -83,12 +83,15 @@ def record_fix(case_id: str, data: FixRecordCreate, db: Session = Depends(get_db
             db, case_id, data.review_id, data.commands, data.description, data.performed_by
         )
         return {
+            "status": "RECORDED",
             "message": "Fix recorded successfully.",
             "case_id": case_id,
             "review_id": data.review_id,
             "performed_by": data.performed_by,
             "applied_by": "HUMAN_APPLIED",
+            "execution_performed": False,
             "note": "Commands were NOT automatically executed. Human applied manually.",
+            "safety_notice": "Commands are stored for audit purposes only and never executed autonomously.",
         }
     except ReviewNotFoundError as exc:
         raise HTTPException(status_code=404, detail={"code": exc.error_code, "message": exc.message})

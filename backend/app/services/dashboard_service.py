@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from sqlalchemy import func
@@ -150,7 +150,7 @@ class DashboardService:
 
     def get_timeline(self, db: Session, days: int = 30) -> list[dict[str, Any]]:
         """Return daily counts of cases, diagnoses, reviews for the last N days."""
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
         timeline = []
         for i in range(days):
@@ -319,16 +319,22 @@ class EvaluationService:
         # Human agreement
         total_reviews = db.query(func.count(Review.id)).scalar() or 0
         accepted = db.query(func.count(Review.id)).filter(Review.decision == "ACCEPTED").scalar() or 0
+        match_rate = _safe_rate(root_cause_matches, evaluated)
+        ground_rate = _safe_rate(grounded_count, evaluated)
+        agreement_rate = _safe_rate(accepted, total_reviews)
 
         return {
+            "total_cases": len(cases_with_expected),
             "cases_evaluated": evaluated,
-            "root_cause_match_rate": _safe_rate(root_cause_matches, evaluated),
+            "accuracy": match_rate or 0.0,
+            "root_cause_match_rate": match_rate,
             "osi_layer_match_rate": _safe_rate(osi_matches, evaluated),
             "concept_match_rate": _safe_rate(concept_matches, evaluated),
-            "evidence_grounding_rate": _safe_rate(grounded_count, evaluated),
-            "human_agreement_rate": _safe_rate(accepted, total_reviews),
+            "grounding_rate": ground_rate,
+            "evidence_grounding_rate": ground_rate,
+            "human_agreement_rate": agreement_rate,
             "evaluation_note": (
-                "Internal evaluation based on keyword matching. "
+                "Internal evaluation based on keyword matching and expected fault comparison. "
                 "Results are indicative only, not calibrated accuracy."
             ),
         }

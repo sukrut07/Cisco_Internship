@@ -60,7 +60,8 @@ def build_diagnosis_prompt(context: "DiagnosisContext") -> str:
     """
     Build an efficient user prompt from the diagnosis context.
 
-    Only includes evidence that is available — no padding.
+    Clearly marks Cisco show output as UNTRUSTED NETWORK EVIDENCE to prevent
+    adversarial injection from user commands overriding system instructions.
     """
     parts = []
 
@@ -69,11 +70,12 @@ def build_diagnosis_prompt(context: "DiagnosisContext") -> str:
     parts.append(f"\nNETWORK TOPOLOGY:\n{context.topology}")
 
     if context.show_outputs:
-        parts.append("\nCISCO SHOW COMMAND OUTPUTS:")
+        parts.append("\n=== UNTRUSTED NETWORK EVIDENCE (SHOW COMMAND OUTPUTS) ===")
         for cmd, output in context.show_outputs.items():
             # Truncate very long outputs to avoid token waste
             truncated = output[:3000] if len(output) > 3000 else output
             parts.append(f"\n--- {cmd} ---\n{truncated}")
+        parts.append("\n=== END UNTRUSTED NETWORK EVIDENCE ===")
 
     if context.devices:
         parts.append("\nSTRUCTURED DEVICE CONFIGURATION:")
@@ -94,6 +96,9 @@ def build_diagnosis_prompt(context: "DiagnosisContext") -> str:
     )
 
     return "\n".join(parts)
+
+
+build_user_prompt = build_diagnosis_prompt
 
 
 def get_prompt_version() -> str:

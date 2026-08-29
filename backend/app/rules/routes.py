@@ -3,17 +3,20 @@ NetSage AI — Route Rule.
 
 Checks for missing routes in the routing table.
 Uses IP containment logic to avoid false positives when a covering route exists.
+Extracts target networks from symptoms when destination_network is not explicitly set.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from app.rules.base import BaseRule, RuleCheckResult
 from app.parsers.route_parser import parse_ip_route, find_route_for_network, has_default_route
+from app.rules.base import BaseRule, RuleCheckResult
+from app.utils.ip_utils import extract_ips_from_text, is_valid_ip
 
 
 class RouteRule(BaseRule):
-    """Detect missing routes and routing table issues."""
+    """Detect missing routes, unreachable next-hops, and routing table issues."""
 
     name = "missing_route"
     description = "Checks whether destination networks are reachable in the routing table."
@@ -22,6 +25,7 @@ class RouteRule(BaseRule):
         show_outputs: dict = context.get("show_outputs", {})
         routes: list[dict] = context.get("routes", [])
         destination_network: str | None = context.get("destination_network")
+        symptom: str = context.get("symptom", "")
 
         # Parse from raw output if not pre-parsed
         if not routes and show_outputs.get("show ip route"):
@@ -32,6 +36,17 @@ class RouteRule(BaseRule):
 
         evidence = []
 
+        # If no explicit destination network, try to extract target IP from symptom
+        if not destination_network and symptom:
+            symptom_ips = extract_ips_from_text(symptom)
+            # Find IPs that are not standard localhost/gateway/mask
+            candidate_ips = [
+                ip for ip in symptom_ips
+                if not ip.startswith("127.") and not ip.startswith("255.") and not ip.endswith(".0")
+            ]
+            if candidate_ips:
+                destination_network = candidate_ips[-1]  # Most likely target IP
+
         # Check for default route
         if not has_default_route(routes):
             evidence.append("No default route (0.0.0.0/0) found in routing table.")
@@ -41,8 +56,7 @@ class RouteRule(BaseRule):
             best_route = find_route_for_network(destination_network, routes)
             if best_route is None:
                 evidence.append(
-                    f"No route to destination network {destination_network}. "
-                    f"No covering route found."
+                    f"No route to destination {destination_network} in routing table."
                 )
                 return self._fail(
                     message=f"No route to {destination_network} in routing table.",
@@ -59,6 +73,11 @@ class RouteRule(BaseRule):
                     message=f"Route to {destination_network} exists.",
                     evidence=[route_info],
                 )
+
+        # Check routing protocols if output present
+        proto_output = (show_outputs.get("show ip protocols") or "").lower()
+        if "routing protocol is" not in proto_output and proto_output:
+            evidence.append("No active dynamic routing protocol identified in 'show ip protocols'.")
 
         if evidence:
             return self._warning(

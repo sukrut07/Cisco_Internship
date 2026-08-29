@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy.orm import Session
@@ -287,7 +287,7 @@ class DiagnosisService:
             ),
             workflow_state="AWAITING_HUMAN_REVIEW",
             request_id=request_id,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
         )
 
     def get_diagnosis(self, db: Session, diagnosis_id: int) -> Diagnosis:

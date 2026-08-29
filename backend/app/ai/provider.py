@@ -18,7 +18,7 @@ _PROVIDER_MAP = {
     "mock": "app.ai.mock_provider.MockAIProvider",
     "openai": "app.ai.openai_provider.OpenAIProvider",
     "gemini": "app.ai.gemini_provider.GeminiProvider",
-    "anthropic": "app.ai.gemini_provider.AnthropicProvider",
+    "anthropic": "app.ai.anthropic_provider.AnthropicProvider",
 }
 
 

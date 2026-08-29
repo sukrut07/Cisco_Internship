@@ -4,7 +4,7 @@ NetSage AI — Common Pydantic schemas (pagination, errors, metadata).
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, Field
@@ -40,5 +40,5 @@ class APIMetadata(BaseModel):
     """Common metadata attached to responses."""
 
     request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     workflow_state: Optional[str] = None
