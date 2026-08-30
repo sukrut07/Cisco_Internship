@@ -1,0 +1,2704 @@
+[
+  {
+    "case_id": "CASE-001",
+    "category": "STATIC_ROUTING",
+    "title": "Missing Static Route to Server Network",
+    "symptom": "PC can ping the default gateway (192.168.1.1) but cannot reach the server at 192.168.30.10. Traceroute shows the packet is dropped at the router.",
+    "topology": "PC1 (192.168.1.10/24) -> SW1 -> R1 (Gi0/0: 192.168.1.1, Gi0/1: 10.0.0.1) -> R2 (Gi0/0: 10.0.0.2, Gi0/1: 192.168.30.1) -> Server1 (192.168.30.10/24)",
+    "show_outputs": {
+      "show ip route": "Codes: C - connected, S - static, R - RIP\nGateway of last resort is not set\nC    192.168.1.0/24 is directly connected, GigabitEthernet0/0\nC    10.0.0.0/30 is directly connected, GigabitEthernet0/1",
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.1.1     YES manual up                    up\nGigabitEthernet0/1    10.0.0.1        YES manual up                    up"
+    },
+    "expected_fault": "Missing static route to 192.168.30.0/24 via 10.0.0.2",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Static Routing",
+    "severity": "HIGH",
+    "expected_fix": [
+      "On R1: ip route 192.168.30.0 255.255.255.0 10.0.0.2",
+      "Verify: show ip route 192.168.30.0",
+      "Test: ping 192.168.30.10 from PC1"
+    ],
+    "next_command": "show ip route",
+    "tags": [
+      "routing",
+      "static",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "RESOLVED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "Missing static route to 192.168.30.0/24 via 10.0.0.2",
+      "confidence": 90,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 88,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Static Routing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-101",
+          "source_command": "show ip route",
+          "snippet": "Gateway of last resort is not set",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip route"
+        }
+      ],
+      "recommended_fix": [
+        "On R1: ip route 192.168.30.0 255.255.255.0 10.0.0.2",
+        "Verify: show ip route 192.168.30.0",
+        "Test: ping 192.168.30.10 from PC1"
+      ],
+      "next_command": "show ip route"
+    },
+    "rule_results": [
+      {
+        "id": "rule-11",
+        "name": "check_static_routing",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Static Routing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-002",
+    "category": "GATEWAY",
+    "title": "Wrong Default Gateway on PC",
+    "symptom": "PC1 can ping other hosts on the same subnet but cannot reach any other network. PC1 shows default gateway 192.168.20.1 but is in the 192.168.10.0/24 subnet.",
+    "topology": "PC1 (192.168.10.20/24, GW: 192.168.20.1) -> SW1 -> R1 (192.168.10.1/24)",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.10.1    YES manual up                    up"
+    },
+    "expected_fault": "Default gateway 192.168.20.1 is outside host subnet 192.168.10.0/24",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Default Gateway",
+    "severity": "HIGH",
+    "expected_fix": [
+      "Change PC1 default gateway to 192.168.10.1",
+      "Verify: ipconfig on PC1",
+      "Test: ping 192.168.10.1 (gateway)",
+      "Test: ping remote host"
+    ],
+    "next_command": "ipconfig /all",
+    "tags": [
+      "gateway",
+      "ip-addressing",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1",
+        "ip": "192.168.10.20",
+        "mask": "255.255.255.0",
+        "gateway": "192.168.20.1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "Default gateway 192.168.20.1 is outside host subnet 192.168.10.0/24",
+      "confidence": 91,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 89,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Default Gateway. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-201",
+          "source_command": "show ip interface brief",
+          "snippet": "GigabitEthernet0/0    192.168.10.1    YES manual up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "Change PC1 default gateway to 192.168.10.1",
+        "Verify: ipconfig on PC1",
+        "Test: ping 192.168.10.1 (gateway)",
+        "Test: ping remote host"
+      ],
+      "next_command": "ipconfig /all"
+    },
+    "rule_results": [
+      {
+        "id": "rule-21",
+        "name": "check_default_gateway",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Default Gateway"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-003",
+    "category": "IP_ADDRESSING",
+    "title": "Duplicate IP Address Conflict",
+    "symptom": "PC1 and PC2 intermittently lose connectivity. ARP conflicts appear. Users report random disconnections on the network.",
+    "topology": "PC1 (192.168.1.10/24) and PC2 (192.168.1.10/24) both connected to SW1",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.1.1     YES manual up                    up"
+    },
+    "expected_fault": "Duplicate IP address 192.168.1.10 assigned to both PC1 and PC2",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "IP Addressing",
+    "severity": "HIGH",
+    "expected_fix": [
+      "Identify both devices with 'arp -a'",
+      "Change PC2 IP to 192.168.1.11",
+      "Verify no duplicate exists",
+      "Test connectivity from both PCs"
+    ],
+    "next_command": "show ip arp",
+    "tags": [
+      "ip-addressing",
+      "duplicate-ip",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1",
+        "ip": "192.168.1.10",
+        "mask": "255.255.255.0"
+      },
+      {
+        "name": "PC2",
+        "ip": "192.168.1.10",
+        "mask": "255.255.255.0"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "CONFLICT",
+    "ai_diagnosis": {
+      "root_cause": "Duplicate IP address 192.168.1.10 assigned to both PC1 and PC2",
+      "confidence": 92,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 90,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in IP Addressing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-301",
+          "source_command": "show ip interface brief",
+          "snippet": "GigabitEthernet0/0    192.168.1.1     YES manual up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "Identify both devices with 'arp -a'",
+        "Change PC2 IP to 192.168.1.11",
+        "Verify no duplicate exists",
+        "Test connectivity from both PCs"
+      ],
+      "next_command": "show ip arp"
+    },
+    "rule_results": [
+      {
+        "id": "rule-31",
+        "name": "check_ip_addressing",
+        "status": "FAIL",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Discrepancy detected",
+        "note": "Deterministic evaluation for IP Addressing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-004",
+    "category": "IP_ADDRESSING",
+    "title": "Interface Administratively Shut Down",
+    "symptom": "PC1 cannot communicate with any device. The switch port connected to R1 Gi0/1 shows no link. The uplink between SW1 and R1 is suspected to be down.",
+    "topology": "PC1 -> SW1 -> R1 (Gi0/1 shutdown) -> Server1",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.1.1     YES manual up                    up\nGigabitEthernet0/1    10.0.0.1        YES manual administratively down down"
+    },
+    "expected_fault": "Interface GigabitEthernet0/1 is administratively shut down",
+    "expected_osi_layer": "Layer 1",
+    "osi_layer": "Layer 1",
+    "concept": "Interface Status",
+    "severity": "HIGH",
+    "expected_fix": [
+      "On R1: interface GigabitEthernet0/1",
+      "no shutdown",
+      "Verify: show ip interface brief",
+      "Test connectivity"
+    ],
+    "next_command": "show ip interface brief",
+    "tags": [
+      "interface",
+      "shutdown",
+      "layer1"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "CONFLICT",
+    "ai_diagnosis": {
+      "root_cause": "Interface GigabitEthernet0/1 is administratively shut down",
+      "confidence": 93,
+      "osi_layer": "Layer 1 - Grounded",
+      "viability_score": 91,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Interface Status. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-401",
+          "source_command": "show ip interface brief",
+          "snippet": "GigabitEthernet0/0    192.168.1.1     YES manual up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "On R1: interface GigabitEthernet0/1",
+        "no shutdown",
+        "Verify: show ip interface brief",
+        "Test connectivity"
+      ],
+      "next_command": "show ip interface brief"
+    },
+    "rule_results": [
+      {
+        "id": "rule-41",
+        "name": "check_interface_status",
+        "status": "FAIL",
+        "layer": "Layer 1",
+        "expected": "Normal operational parameters",
+        "actual": "Discrepancy detected",
+        "note": "Deterministic evaluation for Interface Status"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-005",
+    "category": "VLAN",
+    "title": "VLAN Not Created in VLAN Database",
+    "symptom": "PC1 in VLAN 20 (Sales) cannot communicate with PC2 in VLAN 20 on a different switch port. VLAN 20 is not visible in the VLAN database.",
+    "topology": "PC1 (VLAN 20) -> Fa0/1 -> SW1 -> Fa0/2 -> PC2 (VLAN 20)",
+    "show_outputs": {
+      "show vlan brief": "VLAN Name                             Status    Ports\n---- -------------------------------- --------- -------------------------------\n1    default                          active    Fa0/3, Fa0/4, Fa0/5\n1002 fddi-default                     act/unsup\n1003 token-ring-default               act/unsup\n1004 fddinet-default                  act/unsup\n1005 trnet-default                    act/unsup",
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nVlan1                  192.168.1.1     YES manual up                    up"
+    },
+    "expected_fault": "VLAN 20 does not exist in the VLAN database",
+    "expected_osi_layer": "Layer 2",
+    "osi_layer": "Layer 2",
+    "concept": "VLAN",
+    "severity": "HIGH",
+    "expected_fix": [
+      "SW1(config)# vlan 20",
+      "SW1(config-vlan)# name Sales",
+      "SW1(config)# interface fa0/1",
+      "SW1(config-if)# switchport access vlan 20",
+      "Verify: show vlan brief"
+    ],
+    "next_command": "show vlan brief",
+    "tags": [
+      "vlan",
+      "layer2",
+      "switching"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "VLAN 20 does not exist in the VLAN database",
+      "confidence": 94,
+      "osi_layer": "Layer 2 - Grounded",
+      "viability_score": 92,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in VLAN. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-501",
+          "source_command": "show vlan brief",
+          "snippet": "---- -------------------------------- --------- -------------------------------",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show vlan brief"
+        }
+      ],
+      "recommended_fix": [
+        "SW1(config)# vlan 20",
+        "SW1(config-vlan)# name Sales",
+        "SW1(config)# interface fa0/1",
+        "SW1(config-if)# switchport access vlan 20",
+        "Verify: show vlan brief"
+      ],
+      "next_command": "show vlan brief"
+    },
+    "rule_results": [
+      {
+        "id": "rule-51",
+        "name": "check_vlan",
+        "status": "PASS",
+        "layer": "Layer 2",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for VLAN"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-006",
+    "category": "IP_ADDRESSING",
+    "title": "Wrong Subnet Mask on Host",
+    "symptom": "PC1 can ping 192.168.1.1 but cannot ping 192.168.1.200. PC1 incorrectly believes 192.168.1.200 is on a different network due to a /25 mask instead of /24.",
+    "topology": "PC1 (192.168.1.10/25) -> SW1 -> R1 (192.168.1.1/24) -> PC2 (192.168.1.200/24)",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.1.1     YES manual up                    up"
+    },
+    "expected_fault": "PC1 has subnet mask /25 instead of /24, causing it to think 192.168.1.200 is on a different network",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "IP Addressing",
+    "severity": "MEDIUM",
+    "expected_fix": [
+      "Change PC1 subnet mask from 255.255.255.128 to 255.255.255.0",
+      "Verify IP configuration",
+      "Test: ping 192.168.1.200"
+    ],
+    "next_command": "ipconfig /all",
+    "tags": [
+      "ip-addressing",
+      "subnet-mask",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1",
+        "ip": "192.168.1.10",
+        "mask": "255.255.255.128",
+        "expected_network": "192.168.1.0/24"
+      }
+    ],
+    "status": "RESOLVED",
+    "fusion_status": "CONFLICT",
+    "ai_diagnosis": {
+      "root_cause": "PC1 has subnet mask /25 instead of /24, causing it to think 192.168.1.200 is on a different network",
+      "confidence": 95,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 93,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in IP Addressing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-601",
+          "source_command": "show ip interface brief",
+          "snippet": "GigabitEthernet0/0    192.168.1.1     YES manual up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "Change PC1 subnet mask from 255.255.255.128 to 255.255.255.0",
+        "Verify IP configuration",
+        "Test: ping 192.168.1.200"
+      ],
+      "next_command": "ipconfig /all"
+    },
+    "rule_results": [
+      {
+        "id": "rule-61",
+        "name": "check_ip_addressing",
+        "status": "FAIL",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Discrepancy detected",
+        "note": "Deterministic evaluation for IP Addressing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-007",
+    "category": "TRUNKING",
+    "title": "VLAN Not Allowed on Trunk",
+    "symptom": "Inter-switch communication works for VLAN 1 but not for VLAN 10 (Engineering). VLAN 10 hosts can only ping devices on the same switch.",
+    "topology": "SW1 (Gi0/1 trunk) <-> (Gi0/1 trunk) SW2; PC1 (VLAN 10) on SW1; PC2 (VLAN 10) on SW2",
+    "show_outputs": {
+      "show interfaces trunk": "Port        Mode         Encapsulation  Status        Native vlan\nGi0/1       on           802.1q         trunking      1\n\nPort        Vlans allowed on trunk\nGi0/1       1-9,11-4094\n\nPort        Vlans allowed and active in management domain\nGi0/1       1\n\nPort        Vlans in spanning tree forwarding state and not pruned\nGi0/1       1",
+      "show vlan brief": "VLAN Name                             Status    Ports\n---- -------------------------------- --------- -------------------------------\n1    default                          active    \n10   Engineering                      active    Fa0/1"
+    },
+    "expected_fault": "VLAN 10 is not allowed on the trunk link between SW1 and SW2",
+    "expected_osi_layer": "Layer 2",
+    "osi_layer": "Layer 2",
+    "concept": "802.1Q Trunking",
+    "severity": "HIGH",
+    "expected_fix": [
+      "SW1(config)# interface gi0/1",
+      "SW1(config-if)# switchport trunk allowed vlan add 10",
+      "Repeat on SW2",
+      "Verify: show interfaces trunk"
+    ],
+    "next_command": "show interfaces trunk",
+    "tags": [
+      "trunking",
+      "vlan",
+      "layer2"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "VLAN 10 is not allowed on the trunk link between SW1 and SW2",
+      "confidence": 96,
+      "osi_layer": "Layer 2 - Grounded",
+      "viability_score": 94,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in 802.1Q Trunking. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-701",
+          "source_command": "show interfaces trunk",
+          "snippet": "Gi0/1       on           802.1q         trunking      1",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show interfaces trunk"
+        }
+      ],
+      "recommended_fix": [
+        "SW1(config)# interface gi0/1",
+        "SW1(config-if)# switchport trunk allowed vlan add 10",
+        "Repeat on SW2",
+        "Verify: show interfaces trunk"
+      ],
+      "next_command": "show interfaces trunk"
+    },
+    "rule_results": [
+      {
+        "id": "rule-71",
+        "name": "check_802_1q_trunking",
+        "status": "PASS",
+        "layer": "Layer 2",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for 802.1Q Trunking"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-008",
+    "category": "DHCP",
+    "title": "DHCP Server Not Reachable — APIPA Address",
+    "symptom": "PC1 received IP address 169.254.45.32 after connecting to the network. The PC cannot communicate with any other device. DHCP server is located at 192.168.10.254.",
+    "topology": "PC1 -> SW1 -> R1 -> DHCP Server (192.168.10.254)",
+    "show_outputs": {
+      "show ip dhcp binding": "IP address       Client-ID/         Lease expiration        Type\n                 Hardware address",
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.10.1    YES manual up                    up"
+    },
+    "expected_fault": "PC1 received APIPA address — DHCP server unreachable",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "DHCP",
+    "severity": "HIGH",
+    "expected_fix": [
+      "Verify DHCP server is running",
+      "Check DHCP pool: show ip dhcp pool",
+      "If DHCP is on different subnet, configure DHCP relay: ip helper-address 192.168.10.254",
+      "Release/renew: ipconfig /renew"
+    ],
+    "next_command": "show ip dhcp binding",
+    "tags": [
+      "dhcp",
+      "apipa",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1",
+        "ip": "169.254.45.32",
+        "mask": "255.255.0.0"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "PC1 received APIPA address — DHCP server unreachable",
+      "confidence": 97,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 95,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in DHCP. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-801",
+          "source_command": "show ip dhcp binding",
+          "snippet": "                 Hardware address",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip dhcp binding"
+        }
+      ],
+      "recommended_fix": [
+        "Verify DHCP server is running",
+        "Check DHCP pool: show ip dhcp pool",
+        "If DHCP is on different subnet, configure DHCP relay: ip helper-address 192.168.10.254",
+        "Release/renew: ipconfig /renew"
+      ],
+      "next_command": "show ip dhcp binding"
+    },
+    "rule_results": [
+      {
+        "id": "rule-81",
+        "name": "check_dhcp",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for DHCP"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-009",
+    "category": "DHCP",
+    "title": "DHCP Relay Agent Not Configured",
+    "symptom": "PCs in VLAN 20 (192.168.20.0/24) cannot get IP addresses from the DHCP server in VLAN 10 (192.168.10.100). PCs receive APIPA addresses.",
+    "topology": "PC1 (VLAN 20) -> SW1 -> R1 (VLAN 10 SVI: 192.168.10.1, VLAN 20 SVI: 192.168.20.1) -> DHCP Server (192.168.10.100)",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nVlan10                 192.168.10.1    YES manual up                    up\nVlan20                 192.168.20.1    YES manual up                    up",
+      "show ip dhcp binding": "IP address       Client-ID/         Lease expiration        Type"
+    },
+    "expected_fault": "DHCP relay (ip helper-address) not configured on VLAN 20 SVI",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "DHCP",
+    "severity": "HIGH",
+    "expected_fix": [
+      "R1(config)# interface vlan 20",
+      "R1(config-if)# ip helper-address 192.168.10.100",
+      "Verify: show ip helper-address",
+      "Test: ipconfig /renew on PC1"
+    ],
+    "next_command": "show ip helper-address",
+    "tags": [
+      "dhcp",
+      "relay",
+      "helper-address",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "DHCP relay (ip helper-address) not configured on VLAN 20 SVI",
+      "confidence": 98,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 96,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in DHCP. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-901",
+          "source_command": "show ip interface brief",
+          "snippet": "Vlan10                 192.168.10.1    YES manual up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "R1(config)# interface vlan 20",
+        "R1(config-if)# ip helper-address 192.168.10.100",
+        "Verify: show ip helper-address",
+        "Test: ipconfig /renew on PC1"
+      ],
+      "next_command": "show ip helper-address"
+    },
+    "rule_results": [
+      {
+        "id": "rule-91",
+        "name": "check_dhcp",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for DHCP"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-010",
+    "category": "DNS",
+    "title": "DNS Resolution Failure — IP Works",
+    "symptom": "Users can ping server by IP (192.168.30.10) but cannot reach it by name (server1.company.local). Web browser cannot connect to internal websites by name.",
+    "topology": "PC1 -> R1 -> DNS Server (192.168.1.100) -> Server1 (192.168.30.10)",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.1.1     YES manual up                    up"
+    },
+    "expected_fault": "DNS server not configured or unreachable — name resolution fails",
+    "expected_osi_layer": "Layer 7",
+    "osi_layer": "Layer 7",
+    "concept": "DNS",
+    "severity": "MEDIUM",
+    "expected_fix": [
+      "Verify DNS server IP on PC1",
+      "Test: nslookup server1.company.local",
+      "Ping DNS server: ping 192.168.1.100",
+      "Verify DNS service is running on server",
+      "Configure correct DNS server on PC1 if needed"
+    ],
+    "next_command": "nslookup server1.company.local",
+    "tags": [
+      "dns",
+      "name-resolution",
+      "layer7"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "DNS server not configured or unreachable — name resolution fails",
+      "confidence": 99,
+      "osi_layer": "Layer 7 - Grounded",
+      "viability_score": 97,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in DNS. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-1001",
+          "source_command": "show ip interface brief",
+          "snippet": "GigabitEthernet0/0    192.168.1.1     YES manual up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "Verify DNS server IP on PC1",
+        "Test: nslookup server1.company.local",
+        "Ping DNS server: ping 192.168.1.100",
+        "Verify DNS service is running on server",
+        "Configure correct DNS server on PC1 if needed"
+      ],
+      "next_command": "nslookup server1.company.local"
+    },
+    "rule_results": [
+      {
+        "id": "rule-101",
+        "name": "check_dns",
+        "status": "PASS",
+        "layer": "Layer 7",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for DNS"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-011",
+    "category": "ACL",
+    "title": "ACL Blocking Traffic Between VLANs",
+    "symptom": "PC1 (192.168.10.0/24) cannot reach servers in 192.168.30.0/24. Ping returns 'destination host unreachable'. Traffic in the opposite direction works fine.",
+    "topology": "PC1 (192.168.10.0/24) -> R1 (ACL 101 applied inbound on Gi0/0) -> Server1 (192.168.30.0/24)",
+    "show_outputs": {
+      "show access-lists": "Extended IP access list 101\n    10 deny ip 192.168.10.0 0.0.0.255 192.168.30.0 0.0.0.255 (127 matches)\n    20 permit ip any any (45 matches)",
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.10.1    YES manual up                    up"
+    },
+    "expected_fault": "ACL 101 seq 10 explicitly denies traffic from 192.168.10.0 to 192.168.30.0",
+    "expected_osi_layer": "Layer 4",
+    "osi_layer": "Layer 4",
+    "concept": "ACL",
+    "severity": "HIGH",
+    "expected_fix": [
+      "Review ACL 101 purpose: show access-lists",
+      "If deny is unintentional: no access-list 101 10",
+      "Add permit: access-list 101 10 permit ip 192.168.10.0 0.0.0.255 192.168.30.0 0.0.0.255",
+      "Reorder if needed",
+      "Test connectivity"
+    ],
+    "next_command": "show access-lists",
+    "tags": [
+      "acl",
+      "layer4",
+      "security"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "RESOLVED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "ACL 101 seq 10 explicitly denies traffic from 192.168.10.0 to 192.168.30.0",
+      "confidence": 90,
+      "osi_layer": "Layer 4 - Grounded",
+      "viability_score": 98,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in ACL. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-1101",
+          "source_command": "show access-lists",
+          "snippet": "    10 deny ip 192.168.10.0 0.0.0.255 192.168.30.0 0.0.0.255 (127 matches)",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show access-lists"
+        }
+      ],
+      "recommended_fix": [
+        "Review ACL 101 purpose: show access-lists",
+        "If deny is unintentional: no access-list 101 10",
+        "Add permit: access-list 101 10 permit ip 192.168.10.0 0.0.0.255 192.168.30.0 0.0.0.255",
+        "Reorder if needed",
+        "Test connectivity"
+      ],
+      "next_command": "show access-lists"
+    },
+    "rule_results": [
+      {
+        "id": "rule-111",
+        "name": "check_acl",
+        "status": "PASS",
+        "layer": "Layer 4",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for ACL"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-012",
+    "category": "NAT",
+    "title": "NAT Translation Missing — Internet Access Fails",
+    "symptom": "Internal hosts (192.168.1.0/24) cannot access the internet. Pinging 8.8.8.8 fails. The ISP router is reachable from R1 but internal hosts cannot reach external IPs.",
+    "topology": "PC1 (192.168.1.10) -> R1 (inside: Gi0/0, outside: Gi0/1) -> ISP (203.0.113.1) -> Internet",
+    "show_outputs": {
+      "show ip nat translations": "Pro Inside global       Inside local        Outside local       Outside global",
+      "show ip nat statistics": "Total active translations: 0 (0 static, 0 dynamic)\nOutside interfaces: GigabitEthernet0/1\nInside interfaces: GigabitEthernet0/0\nHits: 0  Misses: 47",
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.1.1     YES manual up                    up\nGigabitEthernet0/1    203.0.113.2     YES manual up                    up"
+    },
+    "expected_fault": "NAT overload (PAT) not configured — no translations being created despite traffic",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "NAT",
+    "severity": "HIGH",
+    "expected_fix": [
+      "Create access-list: access-list 1 permit 192.168.1.0 0.0.0.255",
+      "Configure NAT: ip nat inside source list 1 interface gi0/1 overload",
+      "Verify interfaces: ip nat inside / ip nat outside",
+      "Test: show ip nat translations"
+    ],
+    "next_command": "show ip nat statistics",
+    "tags": [
+      "nat",
+      "pat",
+      "internet",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "CONFLICT",
+    "ai_diagnosis": {
+      "root_cause": "NAT overload (PAT) not configured — no translations being created despite traffic",
+      "confidence": 91,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 88,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in NAT. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-1201",
+          "source_command": "show ip nat translations",
+          "snippet": "Interface operational",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip nat translations"
+        }
+      ],
+      "recommended_fix": [
+        "Create access-list: access-list 1 permit 192.168.1.0 0.0.0.255",
+        "Configure NAT: ip nat inside source list 1 interface gi0/1 overload",
+        "Verify interfaces: ip nat inside / ip nat outside",
+        "Test: show ip nat translations"
+      ],
+      "next_command": "show ip nat statistics"
+    },
+    "rule_results": [
+      {
+        "id": "rule-121",
+        "name": "check_nat",
+        "status": "FAIL",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Discrepancy detected",
+        "note": "Deterministic evaluation for NAT"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-013",
+    "category": "STATIC_ROUTING",
+    "title": "Incorrect Next-Hop in Static Route",
+    "symptom": "PC1 cannot reach server1. The routing table on R1 shows a route to 192.168.30.0/24 but the next-hop 10.0.0.5 is unreachable. Traffic is being blackholed.",
+    "topology": "PC1 -> R1 (incorrect route: 192.168.30.0/24 via 10.0.0.5) -> Server1 (actual path via 10.0.0.2)",
+    "show_outputs": {
+      "show ip route": "Codes: C - connected, S - static\nC    192.168.1.0/24 is directly connected, GigabitEthernet0/0\nC    10.0.0.0/30 is directly connected, GigabitEthernet0/1\nS    192.168.30.0/24 [1/0] via 10.0.0.5",
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.1.1     YES manual up                    up\nGigabitEthernet0/1    10.0.0.1        YES manual up                    up"
+    },
+    "expected_fault": "Static route next-hop 10.0.0.5 is incorrect (should be 10.0.0.2)",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Static Routing",
+    "severity": "HIGH",
+    "expected_fix": [
+      "Remove incorrect route: no ip route 192.168.30.0 255.255.255.0 10.0.0.5",
+      "Add correct route: ip route 192.168.30.0 255.255.255.0 10.0.0.2",
+      "Verify: show ip route 192.168.30.0",
+      "Test: ping 192.168.30.10"
+    ],
+    "next_command": "show ip route",
+    "tags": [
+      "routing",
+      "static",
+      "next-hop",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "Static route next-hop 10.0.0.5 is incorrect (should be 10.0.0.2)",
+      "confidence": 92,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 89,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Static Routing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-1301",
+          "source_command": "show ip route",
+          "snippet": "C    192.168.1.0/24 is directly connected, GigabitEthernet0/0",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip route"
+        }
+      ],
+      "recommended_fix": [
+        "Remove incorrect route: no ip route 192.168.30.0 255.255.255.0 10.0.0.5",
+        "Add correct route: ip route 192.168.30.0 255.255.255.0 10.0.0.2",
+        "Verify: show ip route 192.168.30.0",
+        "Test: ping 192.168.30.10"
+      ],
+      "next_command": "show ip route"
+    },
+    "rule_results": [
+      {
+        "id": "rule-131",
+        "name": "check_static_routing",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Static Routing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-014",
+    "category": "DYNAMIC_ROUTING",
+    "title": "OSPF Adjacency Not Forming",
+    "symptom": "R1 and R2 are configured for OSPF but no neighbor adjacency forms. Routes are not being shared. Both routers show no OSPF neighbors.",
+    "topology": "R1 (OSPF Area 0, Gi0/0: 10.1.1.1/30) <-> R2 (OSPF Area 0, Gi0/0: 10.1.1.2/30)",
+    "show_outputs": {
+      "show ip route": "Codes: C - connected, O - OSPF\nC    10.1.1.0/30 is directly connected, GigabitEthernet0/0\nC    192.168.1.0/24 is directly connected, GigabitEthernet0/1",
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    10.1.1.1        YES manual up                    up\nGigabitEthernet0/1    192.168.1.1     YES manual up                    up"
+    },
+    "expected_fault": "OSPF adjacency not forming — possible hello timer mismatch or missing network statement",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Dynamic Routing",
+    "severity": "HIGH",
+    "expected_fix": [
+      "Check OSPF config: show run | section ospf",
+      "Verify network statements include the connected networks",
+      "Check hello/dead timers: show ip ospf interface",
+      "Verify area numbers match",
+      "Check: show ip ospf neighbor"
+    ],
+    "next_command": "show ip ospf neighbor",
+    "tags": [
+      "ospf",
+      "dynamic-routing",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "OSPF adjacency not forming — possible hello timer mismatch or missing network statement",
+      "confidence": 93,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 90,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Dynamic Routing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-1401",
+          "source_command": "show ip route",
+          "snippet": "C    10.1.1.0/30 is directly connected, GigabitEthernet0/0",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip route"
+        }
+      ],
+      "recommended_fix": [
+        "Check OSPF config: show run | section ospf",
+        "Verify network statements include the connected networks",
+        "Check hello/dead timers: show ip ospf interface",
+        "Verify area numbers match",
+        "Check: show ip ospf neighbor"
+      ],
+      "next_command": "show ip ospf neighbor"
+    },
+    "rule_results": [
+      {
+        "id": "rule-141",
+        "name": "check_dynamic_routing",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Dynamic Routing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-015",
+    "category": "VLAN",
+    "title": "Incorrect VLAN Access Port Assignment",
+    "symptom": "PC1 is supposed to be in VLAN 10 but is placed in VLAN 1 (default). PC1 can only reach other VLAN 1 devices but not VLAN 10 devices.",
+    "topology": "PC1 -> Fa0/1 (incorrectly in VLAN 1) -> SW1 -> VLAN 10 devices",
+    "show_outputs": {
+      "show vlan brief": "VLAN Name                             Status    Ports\n---- -------------------------------- --------- -------------------------------\n1    default                          active    Fa0/1, Fa0/5\n10   Engineering                      active    Fa0/2, Fa0/3",
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nVlan1                  192.168.1.1     YES manual up                    up\nVlan10                 192.168.10.1    YES manual up                    up"
+    },
+    "expected_fault": "Port Fa0/1 assigned to VLAN 1 instead of VLAN 10",
+    "expected_osi_layer": "Layer 2",
+    "osi_layer": "Layer 2",
+    "concept": "VLAN",
+    "severity": "MEDIUM",
+    "expected_fix": [
+      "SW1(config)# interface fa0/1",
+      "SW1(config-if)# switchport access vlan 10",
+      "Verify: show vlan brief",
+      "Test: ping from PC1 to VLAN 10 device"
+    ],
+    "next_command": "show vlan brief",
+    "tags": [
+      "vlan",
+      "access-port",
+      "layer2"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "Port Fa0/1 assigned to VLAN 1 instead of VLAN 10",
+      "confidence": 94,
+      "osi_layer": "Layer 2 - Grounded",
+      "viability_score": 91,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in VLAN. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-1501",
+          "source_command": "show vlan brief",
+          "snippet": "---- -------------------------------- --------- -------------------------------",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show vlan brief"
+        }
+      ],
+      "recommended_fix": [
+        "SW1(config)# interface fa0/1",
+        "SW1(config-if)# switchport access vlan 10",
+        "Verify: show vlan brief",
+        "Test: ping from PC1 to VLAN 10 device"
+      ],
+      "next_command": "show vlan brief"
+    },
+    "rule_results": [
+      {
+        "id": "rule-151",
+        "name": "check_vlan",
+        "status": "PASS",
+        "layer": "Layer 2",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for VLAN"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-016",
+    "category": "IP_ADDRESSING",
+    "title": "Access Port Shutdown on Switch",
+    "symptom": "PC2 suddenly has no network connectivity. The port on the switch Fa0/3 shows as administratively down. All other ports are operational.",
+    "topology": "PC2 -> Fa0/3 (shutdown) -> SW1 -> network",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nFastEthernet0/1        unassigned      YES unset  up                    up\nFastEthernet0/2        unassigned      YES unset  up                    up\nFastEthernet0/3        unassigned      YES unset  administratively down down\nVlan1                  192.168.1.1     YES manual up                    up"
+    },
+    "expected_fault": "FastEthernet0/3 is administratively shut down",
+    "expected_osi_layer": "Layer 1",
+    "osi_layer": "Layer 1",
+    "concept": "Interface Status",
+    "severity": "HIGH",
+    "expected_fix": [
+      "SW1(config)# interface fa0/3",
+      "SW1(config-if)# no shutdown",
+      "Verify: show ip interface brief",
+      "Verify PC2 gets IP and can communicate"
+    ],
+    "next_command": "show ip interface brief",
+    "tags": [
+      "interface",
+      "shutdown",
+      "layer1",
+      "switch"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "RESOLVED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "FastEthernet0/3 is administratively shut down",
+      "confidence": 95,
+      "osi_layer": "Layer 1 - Grounded",
+      "viability_score": 92,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Interface Status. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-1601",
+          "source_command": "show ip interface brief",
+          "snippet": "FastEthernet0/1        unassigned      YES unset  up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "SW1(config)# interface fa0/3",
+        "SW1(config-if)# no shutdown",
+        "Verify: show ip interface brief",
+        "Verify PC2 gets IP and can communicate"
+      ],
+      "next_command": "show ip interface brief"
+    },
+    "rule_results": [
+      {
+        "id": "rule-161",
+        "name": "check_interface_status",
+        "status": "PASS",
+        "layer": "Layer 1",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Interface Status"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-017",
+    "category": "TRUNKING",
+    "title": "Native VLAN Mismatch Between Switches",
+    "symptom": "Cisco Catalyst logs show '%CDP-4-NATIVE_VLAN_MISMATCH' warnings. Inter-switch traffic on VLAN 1 is partially working but some frames are being dropped.",
+    "topology": "SW1 (native VLAN 1) <-> trunk <-> SW2 (native VLAN 10)",
+    "show_outputs": {
+      "show interfaces trunk": "Port        Mode         Encapsulation  Status        Native vlan\nGi0/1       on           802.1q         trunking      1\n\nPort        Vlans allowed on trunk\nGi0/1       1-4094\n\nPort        Vlans allowed and active in management domain\nGi0/1       1,10,20\n\nPort        Vlans in spanning tree forwarding state and not pruned\nGi0/1       1,10,20"
+    },
+    "expected_fault": "Native VLAN mismatch — SW1 uses VLAN 1, SW2 uses VLAN 10 as native VLAN",
+    "expected_osi_layer": "Layer 2",
+    "osi_layer": "Layer 2",
+    "concept": "802.1Q Trunking",
+    "severity": "MEDIUM",
+    "expected_fix": [
+      "On SW2: interface gi0/1",
+      "switchport trunk native vlan 1",
+      "Or match both sides to same native VLAN",
+      "Verify: show interfaces trunk",
+      "Check CDP warnings cleared"
+    ],
+    "next_command": "show interfaces trunk",
+    "tags": [
+      "trunking",
+      "native-vlan",
+      "layer2"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "Native VLAN mismatch — SW1 uses VLAN 1, SW2 uses VLAN 10 as native VLAN",
+      "confidence": 96,
+      "osi_layer": "Layer 2 - Grounded",
+      "viability_score": 93,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in 802.1Q Trunking. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-1701",
+          "source_command": "show interfaces trunk",
+          "snippet": "Gi0/1       on           802.1q         trunking      1",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show interfaces trunk"
+        }
+      ],
+      "recommended_fix": [
+        "On SW2: interface gi0/1",
+        "switchport trunk native vlan 1",
+        "Or match both sides to same native VLAN",
+        "Verify: show interfaces trunk",
+        "Check CDP warnings cleared"
+      ],
+      "next_command": "show interfaces trunk"
+    },
+    "rule_results": [
+      {
+        "id": "rule-171",
+        "name": "check_802_1q_trunking",
+        "status": "PASS",
+        "layer": "Layer 2",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for 802.1Q Trunking"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-018",
+    "category": "WIRELESS",
+    "title": "Wireless Guest Network Not Isolated",
+    "symptom": "Guest WiFi users can access internal corporate servers at 10.0.0.0/8. Guest network should be isolated to internet-only access. Guest VLAN is VLAN 30.",
+    "topology": "Wireless AP (SSID: Guest-WiFi VLAN 30) -> SW1 -> R1 -> internal (10.0.0.0/8)",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nVlan30                 192.168.30.1    YES manual up                    up"
+    },
+    "expected_fault": "No ACL applied to VLAN 30 SVI to restrict access to internal networks",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Wireless",
+    "severity": "HIGH",
+    "expected_fix": [
+      "Create ACL to deny internal access: access-list 130 deny ip 192.168.30.0 0.0.0.255 10.0.0.0 0.255.255.255",
+      "Permit internet: access-list 130 permit ip any any",
+      "Apply to VLAN 30 SVI inbound",
+      "Test guest isolation"
+    ],
+    "next_command": "show access-lists",
+    "tags": [
+      "wireless",
+      "guest",
+      "acl",
+      "security"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "No ACL applied to VLAN 30 SVI to restrict access to internal networks",
+      "confidence": 97,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 94,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Wireless. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-1801",
+          "source_command": "show ip interface brief",
+          "snippet": "Vlan30                 192.168.30.1    YES manual up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "Create ACL to deny internal access: access-list 130 deny ip 192.168.30.0 0.0.0.255 10.0.0.0 0.255.255.255",
+        "Permit internet: access-list 130 permit ip any any",
+        "Apply to VLAN 30 SVI inbound",
+        "Test guest isolation"
+      ],
+      "next_command": "show access-lists"
+    },
+    "rule_results": [
+      {
+        "id": "rule-181",
+        "name": "check_wireless",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Wireless"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-019",
+    "category": "WIRELESS",
+    "title": "Wireless Authentication Failure",
+    "symptom": "Laptop cannot connect to SSID 'Corporate-Wifi'. Authentication fails repeatedly. Other devices connect fine. The laptop was recently re-imaged.",
+    "topology": "Laptop -> AP (WPA2-Enterprise 802.1X) -> RADIUS Server (192.168.1.200)",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.1.1     YES manual up                    up"
+    },
+    "expected_fault": "802.1X wireless authentication failing — likely missing supplicant configuration or wrong credentials after re-image",
+    "expected_osi_layer": "Layer 2",
+    "osi_layer": "Layer 2",
+    "concept": "Wireless",
+    "severity": "MEDIUM",
+    "expected_fix": [
+      "Verify 802.1X supplicant is configured on laptop",
+      "Check credentials match Active Directory",
+      "Verify RADIUS server reachability: ping 192.168.1.200",
+      "Check RADIUS server logs for authentication failures",
+      "Re-enroll device if certificate-based auth"
+    ],
+    "next_command": "show wireless client summary",
+    "tags": [
+      "wireless",
+      "authentication",
+      "802.1x",
+      "layer2"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "802.1X wireless authentication failing — likely missing supplicant configuration or wrong credentials after re-image",
+      "confidence": 98,
+      "osi_layer": "Layer 2 - Grounded",
+      "viability_score": 95,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Wireless. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-1901",
+          "source_command": "show ip interface brief",
+          "snippet": "GigabitEthernet0/0    192.168.1.1     YES manual up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "Verify 802.1X supplicant is configured on laptop",
+        "Check credentials match Active Directory",
+        "Verify RADIUS server reachability: ping 192.168.1.200",
+        "Check RADIUS server logs for authentication failures",
+        "Re-enroll device if certificate-based auth"
+      ],
+      "next_command": "show wireless client summary"
+    },
+    "rule_results": [
+      {
+        "id": "rule-191",
+        "name": "check_wireless",
+        "status": "PASS",
+        "layer": "Layer 2",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Wireless"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-020",
+    "category": "STATIC_ROUTING",
+    "title": "Default Route Missing on Router",
+    "symptom": "Internal users cannot reach any external internet resources. The router R1 has correct routes to all internal networks but no route to external networks. ISP link is up.",
+    "topology": "Internal (192.168.0.0/16) -> R1 (Gi0/1: 203.0.113.2) -> ISP Router (203.0.113.1) -> Internet",
+    "show_outputs": {
+      "show ip route": "Codes: C - connected, S - static\nGateway of last resort is not set\nC    192.168.1.0/24 is directly connected, GigabitEthernet0/0\nC    192.168.2.0/24 is directly connected, GigabitEthernet0/2\nC    203.0.113.0/30 is directly connected, GigabitEthernet0/1",
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    192.168.1.1     YES manual up                    up\nGigabitEthernet0/1    203.0.113.2     YES manual up                    up"
+    },
+    "expected_fault": "No default route configured — 'Gateway of last resort is not set'",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Static Routing",
+    "severity": "HIGH",
+    "expected_fix": [
+      "R1(config)# ip route 0.0.0.0 0.0.0.0 203.0.113.1",
+      "Verify: show ip route",
+      "Test: ping 8.8.8.8"
+    ],
+    "next_command": "show ip route",
+    "tags": [
+      "routing",
+      "default-route",
+      "internet",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "No default route configured — 'Gateway of last resort is not set'",
+      "confidence": 99,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 96,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Static Routing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-2001",
+          "source_command": "show ip route",
+          "snippet": "Gateway of last resort is not set",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip route"
+        }
+      ],
+      "recommended_fix": [
+        "R1(config)# ip route 0.0.0.0 0.0.0.0 203.0.113.1",
+        "Verify: show ip route",
+        "Test: ping 8.8.8.8"
+      ],
+      "next_command": "show ip route"
+    },
+    "rule_results": [
+      {
+        "id": "rule-201",
+        "name": "check_static_routing",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Static Routing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-021",
+    "category": "INTER_VLAN_ROUTING",
+    "title": "SVI Interface Down — Inter-VLAN Routing Fails",
+    "symptom": "Users in VLAN 20 (192.168.20.0/24) cannot reach users in VLAN 10 (192.168.10.0/24). Intra-VLAN communication works. The multilayer switch appears healthy.",
+    "topology": "PC1 (VLAN 10) -> MLS1 (SVI Vlan10: down) -> PC2 (VLAN 20)",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nVlan1                  192.168.1.1     YES manual up                    up\nVlan10                 192.168.10.1    YES manual administratively down down\nVlan20                 192.168.20.1    YES manual up                    up"
+    },
+    "expected_fault": "SVI Vlan10 is administratively shutdown — inter-VLAN routing fails for VLAN 10",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Inter-VLAN Routing",
+    "severity": "HIGH",
+    "expected_fix": [
+      "MLS(config)# interface vlan 10",
+      "MLS(config-if)# no shutdown",
+      "Verify: show ip interface brief",
+      "Test: ping 192.168.10.1 from PC2"
+    ],
+    "next_command": "show ip interface brief",
+    "tags": [
+      "inter-vlan",
+      "svi",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "RESOLVED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "SVI Vlan10 is administratively shutdown — inter-VLAN routing fails for VLAN 10",
+      "confidence": 90,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 97,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Inter-VLAN Routing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-2101",
+          "source_command": "show ip interface brief",
+          "snippet": "Vlan1                  192.168.1.1     YES manual up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "MLS(config)# interface vlan 10",
+        "MLS(config-if)# no shutdown",
+        "Verify: show ip interface brief",
+        "Test: ping 192.168.10.1 from PC2"
+      ],
+      "next_command": "show ip interface brief"
+    },
+    "rule_results": [
+      {
+        "id": "rule-211",
+        "name": "check_inter_vlan_routing",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Inter-VLAN Routing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-022",
+    "category": "INTER_VLAN_ROUTING",
+    "title": "Router-on-a-Stick — Subinterface Not Configured",
+    "symptom": "VLAN 30 hosts cannot communicate with VLAN 10 or VLAN 20 hosts. Router R1 has subinterfaces for VLAN 10 and 20 but not VLAN 30.",
+    "topology": "SW1 (trunk Gi0/0) -> R1 (Gi0/0.10, Gi0/0.20, Gi0/0.30 missing) -> inter-VLAN routing",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    unassigned      YES unset  up                    up\nGigabitEthernet0/0.10 192.168.10.1    YES manual up                    up\nGigabitEthernet0/0.20 192.168.20.1    YES manual up                    up"
+    },
+    "expected_fault": "Subinterface Gi0/0.30 for VLAN 30 not configured on router",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Inter-VLAN Routing",
+    "severity": "HIGH",
+    "expected_fix": [
+      "R1(config)# interface gi0/0.30",
+      "R1(config-subif)# encapsulation dot1q 30",
+      "R1(config-subif)# ip address 192.168.30.1 255.255.255.0",
+      "Verify: show ip interface brief",
+      "Test inter-VLAN routing for VLAN 30"
+    ],
+    "next_command": "show ip interface brief",
+    "tags": [
+      "inter-vlan",
+      "router-on-stick",
+      "subinterface",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "Subinterface Gi0/0.30 for VLAN 30 not configured on router",
+      "confidence": 91,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 98,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Inter-VLAN Routing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-2201",
+          "source_command": "show ip interface brief",
+          "snippet": "GigabitEthernet0/0    unassigned      YES unset  up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "R1(config)# interface gi0/0.30",
+        "R1(config-subif)# encapsulation dot1q 30",
+        "R1(config-subif)# ip address 192.168.30.1 255.255.255.0",
+        "Verify: show ip interface brief",
+        "Test inter-VLAN routing for VLAN 30"
+      ],
+      "next_command": "show ip interface brief"
+    },
+    "rule_results": [
+      {
+        "id": "rule-221",
+        "name": "check_inter_vlan_routing",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Inter-VLAN Routing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-023",
+    "category": "DYNAMIC_ROUTING",
+    "title": "EIGRP Network Statement Missing",
+    "symptom": "R1 and R2 are EIGRP neighbors but R2 is not advertising the 192.168.50.0/24 network. Hosts in that network cannot be reached from R1.",
+    "topology": "R1 (EIGRP AS 100) <-> R2 (EIGRP AS 100, has 192.168.50.0/24)",
+    "show_outputs": {
+      "show ip route": "Codes: D - EIGRP, C - connected\nC    10.0.0.0/30 is directly connected, GigabitEthernet0/0\nD    192.168.40.0/24 [90/2172416] via 10.0.0.2\nC    192.168.1.0/24 is directly connected, GigabitEthernet0/1",
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0    10.0.0.1        YES manual up                    up\nGigabitEthernet0/1    192.168.1.1     YES manual up                    up"
+    },
+    "expected_fault": "EIGRP network statement missing for 192.168.50.0/24 on R2",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Dynamic Routing",
+    "severity": "HIGH",
+    "expected_fix": [
+      "On R2: router eigrp 100",
+      "network 192.168.50.0 0.0.0.255",
+      "Verify: show ip eigrp topology",
+      "Test: ping 192.168.50.x from R1"
+    ],
+    "next_command": "show ip eigrp topology",
+    "tags": [
+      "eigrp",
+      "dynamic-routing",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "EIGRP network statement missing for 192.168.50.0/24 on R2",
+      "confidence": 92,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 88,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Dynamic Routing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-2301",
+          "source_command": "show ip route",
+          "snippet": "C    10.0.0.0/30 is directly connected, GigabitEthernet0/0",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip route"
+        }
+      ],
+      "recommended_fix": [
+        "On R2: router eigrp 100",
+        "network 192.168.50.0 0.0.0.255",
+        "Verify: show ip eigrp topology",
+        "Test: ping 192.168.50.x from R1"
+      ],
+      "next_command": "show ip eigrp topology"
+    },
+    "rule_results": [
+      {
+        "id": "rule-231",
+        "name": "check_dynamic_routing",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Dynamic Routing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-024",
+    "category": "ACL",
+    "title": "ACL Blocking ICMP — Ping Fails but Telnet Works",
+    "symptom": "Network engineer cannot ping Router R2 but can telnet to it. Other services are working but ICMP is blocked.",
+    "topology": "Admin PC -> R1 -> R2 (ACL blocking ICMP)",
+    "show_outputs": {
+      "show access-lists": "Extended IP access list MGMT-IN\n    10 deny icmp any any (234 matches)\n    20 permit tcp any any eq 23 (12 matches)\n    30 permit ip any any (89 matches)"
+    },
+    "expected_fault": "ACL MGMT-IN seq 10 blocks ICMP before the permit ip any any rule",
+    "expected_osi_layer": "Layer 4",
+    "osi_layer": "Layer 4",
+    "concept": "ACL",
+    "severity": "LOW",
+    "expected_fix": [
+      "Evaluate if ICMP block is intentional",
+      "If not: no ip access-list extended MGMT-IN",
+      "Recreate without ICMP deny, or reorder: permit icmp any any before deny",
+      "Apply updated ACL",
+      "Test: ping R2"
+    ],
+    "next_command": "show access-lists",
+    "tags": [
+      "acl",
+      "icmp",
+      "layer4"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "ACL MGMT-IN seq 10 blocks ICMP before the permit ip any any rule",
+      "confidence": 93,
+      "osi_layer": "Layer 4 - Grounded",
+      "viability_score": 89,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in ACL. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-2401",
+          "source_command": "show access-lists",
+          "snippet": "    10 deny icmp any any (234 matches)",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show access-lists"
+        }
+      ],
+      "recommended_fix": [
+        "Evaluate if ICMP block is intentional",
+        "If not: no ip access-list extended MGMT-IN",
+        "Recreate without ICMP deny, or reorder: permit icmp any any before deny",
+        "Apply updated ACL",
+        "Test: ping R2"
+      ],
+      "next_command": "show access-lists"
+    },
+    "rule_results": [
+      {
+        "id": "rule-241",
+        "name": "check_acl",
+        "status": "PASS",
+        "layer": "Layer 4",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for ACL"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-025",
+    "category": "NAT",
+    "title": "NAT Inside Interface Not Configured",
+    "symptom": "Internal hosts cannot reach the internet. NAT statistics show 0 translations despite traffic being sent. NAT overload is configured but inside interface designation is missing.",
+    "topology": "PC1 (192.168.1.10) -> R1 (Gi0/0: inside? Gi0/1: outside) -> Internet",
+    "show_outputs": {
+      "show ip nat translations": "Pro Inside global       Inside local        Outside local       Outside global",
+      "show ip nat statistics": "Total active translations: 0 (0 static, 0 dynamic; 0 extended)\nOutside interfaces:\n  GigabitEthernet0/1\nInside interfaces:\nHits: 0  Misses: 120"
+    },
+    "expected_fault": "NAT inside interface not configured on Gi0/0 — no 'ip nat inside' command applied",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "NAT",
+    "severity": "HIGH",
+    "expected_fix": [
+      "R1(config)# interface gi0/0",
+      "R1(config-if)# ip nat inside",
+      "Verify: show ip nat statistics (inside interfaces should now show Gi0/0)",
+      "Test: ping 8.8.8.8 from internal host"
+    ],
+    "next_command": "show ip nat statistics",
+    "tags": [
+      "nat",
+      "inside",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "NAT inside interface not configured on Gi0/0 — no 'ip nat inside' command applied",
+      "confidence": 94,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 90,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in NAT. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-2501",
+          "source_command": "show ip nat translations",
+          "snippet": "Interface operational",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip nat translations"
+        }
+      ],
+      "recommended_fix": [
+        "R1(config)# interface gi0/0",
+        "R1(config-if)# ip nat inside",
+        "Verify: show ip nat statistics (inside interfaces should now show Gi0/0)",
+        "Test: ping 8.8.8.8 from internal host"
+      ],
+      "next_command": "show ip nat statistics"
+    },
+    "rule_results": [
+      {
+        "id": "rule-251",
+        "name": "check_nat",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for NAT"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-026",
+    "category": "VLAN",
+    "title": "VLAN Pruned from Trunk",
+    "symptom": "VLAN 100 traffic is not crossing the trunk between SW1 and SW2. VLAN 100 exists on both switches but hosts cannot communicate across the trunk.",
+    "topology": "PC1 (VLAN 100) on SW1 <-> trunk <-> SW2 (VLAN 100) -> PC2",
+    "show_outputs": {
+      "show interfaces trunk": "Port        Mode         Encapsulation  Status        Native vlan\nGi0/1       on           802.1q         trunking      1\n\nPort        Vlans allowed on trunk\nGi0/1       1-99,101-4094\n\nPort        Vlans allowed and active in management domain\nGi0/1       1,10,20",
+      "show vlan brief": "VLAN Name                             Status    Ports\n---- -------------------------------- --------- -------------------------------\n1    default                          active    \n10   Data                             active    Fa0/1\n20   Voice                            active    Fa0/2\n100  Management                       active    Fa0/10"
+    },
+    "expected_fault": "VLAN 100 is not allowed on the trunk (allowed: 1-99, 101-4094 excludes 100)",
+    "expected_osi_layer": "Layer 2",
+    "osi_layer": "Layer 2",
+    "concept": "VLAN",
+    "severity": "HIGH",
+    "expected_fix": [
+      "SW1(config)# interface gi0/1",
+      "switchport trunk allowed vlan add 100",
+      "Repeat on SW2",
+      "Verify: show interfaces trunk"
+    ],
+    "next_command": "show interfaces trunk",
+    "tags": [
+      "vlan",
+      "trunk",
+      "pruning",
+      "layer2"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "RESOLVED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "VLAN 100 is not allowed on the trunk (allowed: 1-99, 101-4094 excludes 100)",
+      "confidence": 95,
+      "osi_layer": "Layer 2 - Grounded",
+      "viability_score": 91,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in VLAN. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-2601",
+          "source_command": "show interfaces trunk",
+          "snippet": "Gi0/1       on           802.1q         trunking      1",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show interfaces trunk"
+        }
+      ],
+      "recommended_fix": [
+        "SW1(config)# interface gi0/1",
+        "switchport trunk allowed vlan add 100",
+        "Repeat on SW2",
+        "Verify: show interfaces trunk"
+      ],
+      "next_command": "show interfaces trunk"
+    },
+    "rule_results": [
+      {
+        "id": "rule-261",
+        "name": "check_vlan",
+        "status": "PASS",
+        "layer": "Layer 2",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for VLAN"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-027",
+    "category": "IP_ADDRESSING",
+    "title": "Physical Link Down — Cable Issue",
+    "symptom": "PC3 has no connectivity to any resource. The switch port Gi0/5 shows down/down status indicating a Layer 1 physical issue.",
+    "topology": "PC3 -> Gi0/5 (down/down) -> SW1 -> network",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/5    unassigned      YES unset  down                  down\nGigabitEthernet0/1    unassigned      YES unset  up                    up"
+    },
+    "expected_fault": "GigabitEthernet0/5 is physically down (down/down) — Layer 1 failure",
+    "expected_osi_layer": "Layer 1",
+    "osi_layer": "Layer 1",
+    "concept": "Interface Status",
+    "severity": "HIGH",
+    "expected_fix": [
+      "Check physical cable connection",
+      "Try different cable",
+      "Try different port on switch",
+      "Verify PC NIC is operational",
+      "After fix: show ip interface brief"
+    ],
+    "next_command": "show ip interface brief",
+    "tags": [
+      "physical",
+      "layer1",
+      "cable",
+      "interface"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "GigabitEthernet0/5 is physically down (down/down) — Layer 1 failure",
+      "confidence": 96,
+      "osi_layer": "Layer 1 - Grounded",
+      "viability_score": 92,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Interface Status. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-2701",
+          "source_command": "show ip interface brief",
+          "snippet": "GigabitEthernet0/5    unassigned      YES unset  down                  down",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "Check physical cable connection",
+        "Try different cable",
+        "Try different port on switch",
+        "Verify PC NIC is operational",
+        "After fix: show ip interface brief"
+      ],
+      "next_command": "show ip interface brief"
+    },
+    "rule_results": [
+      {
+        "id": "rule-271",
+        "name": "check_interface_status",
+        "status": "PASS",
+        "layer": "Layer 1",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Interface Status"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-028",
+    "category": "DHCP",
+    "title": "DHCP Pool Exhausted",
+    "symptom": "Some new PCs in VLAN 10 cannot get IP addresses. Existing PCs work fine. The DHCP pool was created with 20 addresses for 30 users.",
+    "topology": "30 PCs -> SW1 -> R1 (DHCP Server, pool: 192.168.10.10-192.168.10.29)",
+    "show_outputs": {
+      "show ip dhcp binding": "IP address       Client-ID/         Lease expiration        Type\n192.168.10.10    0100.AABB.CC01     Sep 01 2025 08:00 AM    Automatic\n192.168.10.11    0100.AABB.CC02     Sep 01 2025 08:00 AM    Automatic\n192.168.10.29    0100.AABB.CC20     Sep 01 2025 08:00 AM    Automatic",
+      "show ip dhcp pool": "Pool LAN-POOL :\n Network: 192.168.10.0/24\n Domain Name: company.local\n DNS server: 192.168.10.254"
+    },
+    "expected_fault": "DHCP pool has 20 addresses for 30 users — pool exhausted",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "DHCP",
+    "severity": "MEDIUM",
+    "expected_fix": [
+      "Expand DHCP pool range",
+      "R1(config)# ip dhcp pool LAN-POOL",
+      "network 192.168.10.0 255.255.255.0",
+      "Or exclude fewer addresses to free more",
+      "Consider reducing lease time"
+    ],
+    "next_command": "show ip dhcp binding",
+    "tags": [
+      "dhcp",
+      "pool",
+      "exhausted",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "DHCP pool has 20 addresses for 30 users — pool exhausted",
+      "confidence": 97,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 93,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in DHCP. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-2801",
+          "source_command": "show ip dhcp binding",
+          "snippet": "192.168.10.10    0100.AABB.CC01     Sep 01 2025 08:00 AM    Automatic",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip dhcp binding"
+        }
+      ],
+      "recommended_fix": [
+        "Expand DHCP pool range",
+        "R1(config)# ip dhcp pool LAN-POOL",
+        "network 192.168.10.0 255.255.255.0",
+        "Or exclude fewer addresses to free more",
+        "Consider reducing lease time"
+      ],
+      "next_command": "show ip dhcp binding"
+    },
+    "rule_results": [
+      {
+        "id": "rule-281",
+        "name": "check_dhcp",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for DHCP"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-029",
+    "category": "TRUNKING",
+    "title": "Trunk Not Forming — Mode Mismatch",
+    "symptom": "SW1 and SW2 are connected but the link is not trunking. VLANs 10 and 20 cannot pass between the switches. Both ports appear up/up but as access ports.",
+    "topology": "SW1 (Gi0/1: mode access) <-> SW2 (Gi0/1: mode trunk)",
+    "show_outputs": {
+      "show interfaces trunk": "Port        Mode         Encapsulation  Status        Native vlan\n(No output — no trunks active)",
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/1    unassigned      YES unset  up                    up"
+    },
+    "expected_fault": "Trunk not forming — SW1 port in access mode while SW2 port in trunk mode",
+    "expected_osi_layer": "Layer 2",
+    "osi_layer": "Layer 2",
+    "concept": "802.1Q Trunking",
+    "severity": "HIGH",
+    "expected_fix": [
+      "SW1(config)# interface gi0/1",
+      "SW1(config-if)# switchport mode trunk",
+      "SW1(config-if)# switchport trunk encapsulation dot1q",
+      "Verify: show interfaces trunk"
+    ],
+    "next_command": "show interfaces trunk",
+    "tags": [
+      "trunking",
+      "mode",
+      "layer2"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "Trunk not forming — SW1 port in access mode while SW2 port in trunk mode",
+      "confidence": 98,
+      "osi_layer": "Layer 2 - Grounded",
+      "viability_score": 94,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in 802.1Q Trunking. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-2901",
+          "source_command": "show interfaces trunk",
+          "snippet": "(No output — no trunks active)",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show interfaces trunk"
+        }
+      ],
+      "recommended_fix": [
+        "SW1(config)# interface gi0/1",
+        "SW1(config-if)# switchport mode trunk",
+        "SW1(config-if)# switchport trunk encapsulation dot1q",
+        "Verify: show interfaces trunk"
+      ],
+      "next_command": "show interfaces trunk"
+    },
+    "rule_results": [
+      {
+        "id": "rule-291",
+        "name": "check_802_1q_trunking",
+        "status": "PASS",
+        "layer": "Layer 2",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for 802.1Q Trunking"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-030",
+    "category": "STATIC_ROUTING",
+    "title": "Routing Loop — Incorrect Static Routes",
+    "symptom": "Traceroute to 10.10.10.10 shows packets bouncing between R1 and R2 repeatedly until TTL expires. Both routers have static routes pointing to each other for the destination.",
+    "topology": "PC1 -> R1 -> R2 -> (R1 -> R2 loop for 10.10.10.0/24)",
+    "show_outputs": {
+      "show ip route": "Codes: C - connected, S - static\nC    192.168.1.0/24 is directly connected, GigabitEthernet0/0\nC    10.0.0.0/30 is directly connected, GigabitEthernet0/1\nS    10.10.10.0/24 [1/0] via 10.0.0.2"
+    },
+    "expected_fault": "Routing loop — R1 routes to R2, R2 routes back to R1 for 10.10.10.0/24",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Static Routing",
+    "severity": "CRITICAL",
+    "expected_fix": [
+      "Identify the actual location of 10.10.10.0/24",
+      "On the router directly connected: no ip route, add correct next-hop",
+      "Remove the incorrect route from the other router",
+      "Verify with traceroute — no loops"
+    ],
+    "next_command": "traceroute 10.10.10.10",
+    "tags": [
+      "routing",
+      "loop",
+      "static",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "Routing loop — R1 routes to R2, R2 routes back to R1 for 10.10.10.0/24",
+      "confidence": 99,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 95,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Static Routing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-3001",
+          "source_command": "show ip route",
+          "snippet": "C    192.168.1.0/24 is directly connected, GigabitEthernet0/0",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip route"
+        }
+      ],
+      "recommended_fix": [
+        "Identify the actual location of 10.10.10.0/24",
+        "On the router directly connected: no ip route, add correct next-hop",
+        "Remove the incorrect route from the other router",
+        "Verify with traceroute — no loops"
+      ],
+      "next_command": "traceroute 10.10.10.10"
+    },
+    "rule_results": [
+      {
+        "id": "rule-301",
+        "name": "check_static_routing",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Static Routing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-031",
+    "category": "ACL",
+    "title": "ACL Implicit Deny Blocking Required Traffic",
+    "symptom": "After applying ACL 120 to block a specific subnet, all other traffic from the network stopped working. The ACL was added to block only 192.168.99.0/24.",
+    "topology": "Multiple VLANs -> R1 (ACL 120 applied) -> Server farm",
+    "show_outputs": {
+      "show access-lists": "Extended IP access list 120\n    10 deny ip 192.168.99.0 0.0.0.255 any (0 matches)\n    (implicit deny: 0 matches — but blocking everything)"
+    },
+    "expected_fault": "ACL 120 missing final 'permit ip any any' — implicit deny blocks all traffic except denied subnet",
+    "expected_osi_layer": "Layer 4",
+    "osi_layer": "Layer 4",
+    "concept": "ACL",
+    "severity": "CRITICAL",
+    "expected_fix": [
+      "access-list 120 permit ip any any",
+      "Add this as the last line",
+      "Verify ACL: show access-lists",
+      "Test connectivity for all VLANs"
+    ],
+    "next_command": "show access-lists",
+    "tags": [
+      "acl",
+      "implicit-deny",
+      "layer4"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "RESOLVED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "ACL 120 missing final 'permit ip any any' — implicit deny blocks all traffic except denied subnet",
+      "confidence": 90,
+      "osi_layer": "Layer 4 - Grounded",
+      "viability_score": 96,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in ACL. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-3101",
+          "source_command": "show access-lists",
+          "snippet": "    10 deny ip 192.168.99.0 0.0.0.255 any (0 matches)",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show access-lists"
+        }
+      ],
+      "recommended_fix": [
+        "access-list 120 permit ip any any",
+        "Add this as the last line",
+        "Verify ACL: show access-lists",
+        "Test connectivity for all VLANs"
+      ],
+      "next_command": "show access-lists"
+    },
+    "rule_results": [
+      {
+        "id": "rule-311",
+        "name": "check_acl",
+        "status": "PASS",
+        "layer": "Layer 4",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for ACL"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-032",
+    "category": "NAT",
+    "title": "Static NAT Entry Missing for Server",
+    "symptom": "External users cannot reach the internal web server at 192.168.1.100. The server should be accessible via the public IP 203.0.113.10. NAT is configured for dynamic inside hosts.",
+    "topology": "Internet -> R1 (203.0.113.10 should map to 192.168.1.100) -> Web Server",
+    "show_outputs": {
+      "show ip nat translations": "Pro Inside global       Inside local        Outside local       Outside global\ntcp 203.0.113.2:1025    192.168.1.10:1025   8.8.8.8:80          8.8.8.8:80",
+      "show ip nat statistics": "Total active translations: 1 (0 static, 1 dynamic)\nHits: 45  Misses: 3"
+    },
+    "expected_fault": "Static NAT entry for web server (203.0.113.10 -> 192.168.1.100) not configured",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "NAT",
+    "severity": "HIGH",
+    "expected_fix": [
+      "R1(config)# ip nat inside source static 192.168.1.100 203.0.113.10",
+      "Verify: show ip nat translations",
+      "Test from external host: curl 203.0.113.10"
+    ],
+    "next_command": "show ip nat translations",
+    "tags": [
+      "nat",
+      "static-nat",
+      "server",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "Static NAT entry for web server (203.0.113.10 -> 192.168.1.100) not configured",
+      "confidence": 91,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 97,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in NAT. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-3201",
+          "source_command": "show ip nat translations",
+          "snippet": "tcp 203.0.113.2:1025    192.168.1.10:1025   8.8.8.8:80          8.8.8.8:80",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip nat translations"
+        }
+      ],
+      "recommended_fix": [
+        "R1(config)# ip nat inside source static 192.168.1.100 203.0.113.10",
+        "Verify: show ip nat translations",
+        "Test from external host: curl 203.0.113.10"
+      ],
+      "next_command": "show ip nat translations"
+    },
+    "rule_results": [
+      {
+        "id": "rule-321",
+        "name": "check_nat",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for NAT"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-033",
+    "category": "DYNAMIC_ROUTING",
+    "title": "RIP Routing — Auto-Summary Causing Issues",
+    "symptom": "RIP is configured between R1 and R2. R1 has 172.16.1.0/24 and 172.16.2.0/24 subnets but R2 only learns 172.16.0.0/16 (summarized). Specific subnet routes are unreachable.",
+    "topology": "R1 (172.16.1.0/24, 172.16.2.0/24) <-> RIP <-> R2",
+    "show_outputs": {
+      "show ip route": "Codes: R - RIP, C - connected\nC    10.0.0.0/30 is directly connected, GigabitEthernet0/0\nR    172.16.0.0/16 [120/1] via 10.0.0.1"
+    },
+    "expected_fault": "RIP auto-summary is enabled — classful summarization prevents specific subnet routes from propagating",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Dynamic Routing",
+    "severity": "MEDIUM",
+    "expected_fix": [
+      "On both routers: router rip",
+      "no auto-summary",
+      "version 2",
+      "Verify: show ip route (should see /24 routes)",
+      "Test: ping 172.16.1.1 and 172.16.2.1 from R2"
+    ],
+    "next_command": "show ip rip database",
+    "tags": [
+      "rip",
+      "auto-summary",
+      "dynamic-routing",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "RIP auto-summary is enabled — classful summarization prevents specific subnet routes from propagating",
+      "confidence": 92,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 98,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Dynamic Routing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-3301",
+          "source_command": "show ip route",
+          "snippet": "C    10.0.0.0/30 is directly connected, GigabitEthernet0/0",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip route"
+        }
+      ],
+      "recommended_fix": [
+        "On both routers: router rip",
+        "no auto-summary",
+        "version 2",
+        "Verify: show ip route (should see /24 routes)",
+        "Test: ping 172.16.1.1 and 172.16.2.1 from R2"
+      ],
+      "next_command": "show ip rip database"
+    },
+    "rule_results": [
+      {
+        "id": "rule-331",
+        "name": "check_dynamic_routing",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Dynamic Routing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-034",
+    "category": "VLAN",
+    "title": "Voice VLAN Not Configured on Access Port",
+    "symptom": "IP phones connected to SW1 access ports are not getting proper QoS treatment and are in wrong VLAN. Data traffic (PC behind phone) works but voice quality is poor.",
+    "topology": "IP Phone -> SW1 Fa0/5 (should have voice vlan 10) -> CUCM",
+    "show_outputs": {
+      "show vlan brief": "VLAN Name                             Status    Ports\n---- -------------------------------- --------- -------------------------------\n1    default                          active    Fa0/5\n10   Voice                            active    \n20   Data                             active    Fa0/6"
+    },
+    "expected_fault": "Voice VLAN 10 not configured on access port Fa0/5 — phone defaulting to VLAN 1",
+    "expected_osi_layer": "Layer 2",
+    "osi_layer": "Layer 2",
+    "concept": "VLAN",
+    "severity": "MEDIUM",
+    "expected_fix": [
+      "SW1(config)# interface fa0/5",
+      "switchport access vlan 20",
+      "switchport voice vlan 10",
+      "switchport mode access",
+      "spanning-tree portfast",
+      "Verify: show interfaces fa0/5 switchport"
+    ],
+    "next_command": "show interfaces fa0/5 switchport",
+    "tags": [
+      "vlan",
+      "voice",
+      "qos",
+      "layer2"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "Voice VLAN 10 not configured on access port Fa0/5 — phone defaulting to VLAN 1",
+      "confidence": 93,
+      "osi_layer": "Layer 2 - Grounded",
+      "viability_score": 88,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in VLAN. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-3401",
+          "source_command": "show vlan brief",
+          "snippet": "---- -------------------------------- --------- -------------------------------",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show vlan brief"
+        }
+      ],
+      "recommended_fix": [
+        "SW1(config)# interface fa0/5",
+        "switchport access vlan 20",
+        "switchport voice vlan 10",
+        "switchport mode access",
+        "spanning-tree portfast",
+        "Verify: show interfaces fa0/5 switchport"
+      ],
+      "next_command": "show interfaces fa0/5 switchport"
+    },
+    "rule_results": [
+      {
+        "id": "rule-341",
+        "name": "check_vlan",
+        "status": "PASS",
+        "layer": "Layer 2",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for VLAN"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  },
+  {
+    "case_id": "CASE-035",
+    "category": "INTER_VLAN_ROUTING",
+    "title": "IP Routing Not Enabled on Multilayer Switch",
+    "symptom": "MLS1 is a Layer 3 capable switch with SVIs configured for VLAN 10 and VLAN 20. Hosts in different VLANs cannot communicate even though SVIs are up/up.",
+    "topology": "PC1 (VLAN 10) -> MLS1 (SVIs configured but ip routing disabled) -> PC2 (VLAN 20)",
+    "show_outputs": {
+      "show ip interface brief": "Interface              IP-Address      OK? Method Status                Protocol\nVlan10                 192.168.10.1    YES manual up                    up\nVlan20                 192.168.20.1    YES manual up                    up",
+      "show ip route": "Default gateway is 192.168.10.254\n\n    Network         Next Hop\n*   0.0.0.0         192.168.10.254"
+    },
+    "expected_fault": "'ip routing' not enabled on multilayer switch — operating as Layer 2 switch only",
+    "expected_osi_layer": "Layer 3",
+    "osi_layer": "Layer 3",
+    "concept": "Inter-VLAN Routing",
+    "severity": "HIGH",
+    "expected_fix": [
+      "MLS1(config)# ip routing",
+      "Verify: show ip route (should show connected routes for SVIs)",
+      "Test: ping 192.168.20.1 from VLAN 10 PC"
+    ],
+    "next_command": "show ip routing",
+    "tags": [
+      "inter-vlan",
+      "ip-routing",
+      "multilayer-switch",
+      "layer3"
+    ],
+    "devices": [
+      {
+        "name": "PC1"
+      },
+      {
+        "name": "SW1"
+      },
+      {
+        "name": "R1"
+      }
+    ],
+    "status": "REVIEW_REQUIRED",
+    "fusion_status": "AGREEMENT",
+    "ai_diagnosis": {
+      "root_cause": "'ip routing' not enabled on multilayer switch — operating as Layer 2 switch only",
+      "confidence": 94,
+      "osi_layer": "Layer 3 - Grounded",
+      "viability_score": 89,
+      "explanation": "Analysis of supplied telemetry reveals failure signature in Inter-VLAN Routing. Root cause identified with evidence grounding.",
+      "citations": [
+        {
+          "id": "cite-3501",
+          "source_command": "show ip interface brief",
+          "snippet": "Vlan10                 192.168.10.1    YES manual up                    up",
+          "line_numbers": "Line 2",
+          "significance": "Primary evidence signature in show ip interface brief"
+        }
+      ],
+      "recommended_fix": [
+        "MLS1(config)# ip routing",
+        "Verify: show ip route (should show connected routes for SVIs)",
+        "Test: ping 192.168.20.1 from VLAN 10 PC"
+      ],
+      "next_command": "show ip routing"
+    },
+    "rule_results": [
+      {
+        "id": "rule-351",
+        "name": "check_inter_vlan_routing",
+        "status": "PASS",
+        "layer": "Layer 3",
+        "expected": "Normal operational parameters",
+        "actual": "Parameters within thresholds",
+        "note": "Deterministic evaluation for Inter-VLAN Routing"
+      }
+    ],
+    "created_at": "2026-08-30T10:00:00Z",
+    "updated_at": "2026-08-30T10:00:00Z"
+  }
+]
