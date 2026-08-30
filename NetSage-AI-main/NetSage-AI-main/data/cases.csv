@@ -1,0 +1,199 @@
+case_id,title,symptom,topology,show_outputs,expected_fault,osi_layer,concept,severity
+CASE-101,PC cannot access server in VLAN 30,PC-1 in VLAN 10 cannot ping Server-1 in VLAN 30. Switch logs indicate VLAN 30 does not exist on Access Switch 2.,PC-1 (192.168.10.10) -> Switch-1 -> Switch-2 -> Server-1 (192.168.30.50),"=== Switch-2 show vlan brief ===
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1    default                          active    Fa0/1, Fa0/2, Fa0/3, Fa0/4
+10   Engineering                      active    Fa0/5, Fa0/6
+20   Sales                            active    Fa0/7, Fa0/8
+
+=== Switch-2 show interfaces Fa0/10 switchport ===
+Name: Fa0/10
+Mode: access
+Access Mode VLAN: 30 (inactive)",VLAN 30 is missing from Switch-2 VLAN database causing access port Fa0/10 to be inactive.,Layer 2 (Data Link),VLAN,High
+CASE-102,PC1 has wrong default gateway configured,Host PC1 (192.168.1.50) cannot reach external destination 8.8.8.8 or router subinterface.,PC1 (192.168.1.50/24) -> Switch -> Router Fa0/0.1 (192.168.1.1/24),"=== PC1 IP Configuration ===
+IP Address: 192.168.1.50
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.2.1
+
+=== Router Fa0/0.1 show ip interface brief ===
+Fa0/0.1            192.168.1.1     YES manual up                    up",Default Gateway 192.168.2.1 on PC1 is on a different IP subnet than its IP address 192.168.1.50/24.,Layer 3 (Network),Gateway,High
+CASE-103,DHCP clients fail to acquire IP address on remote VLAN,PC in VLAN 20 receives APIPA address (169.254.x.x). DHCP Server is located in VLAN 10 on Router-1.,PC (VLAN 20) -> Switch -> Router-1 Fa0/0.20 (192.168.20.1) -> Router-1 Fa0/0.10 (DHCP Server),"=== Router-1 show running-config interface Fa0/0.20 ===
+interface FastEthernet0/0.20
+ encapsulation dot1Q 20
+ ip address 192.168.20.1 255.255.255.0
+!
+=== Router-1 show ip dhcp binding ===
+(No bindings for 192.168.20.0 pool)",ip helper-address is missing on Router subinterface Fa0/0.20 to relay DHCP requests to DHCP server.,Layer 3 (Network),DHCP,Critical
+CASE-104,Host cannot resolve internal domain name web.corp.local,PC can ping server by IP address 10.0.0.50 but HTTP requests to web.corp.local fail with host unknown.,PC1 -> Switch -> Router -> DNS Server (10.0.0.53),"=== PC1 IP Config ===
+IP Address: 10.0.10.15
+Subnet Mask: 255.255.255.0
+Default Gateway: 10.0.10.1
+DNS Server: 10.0.0.55
+
+=== Router show ip route 10.0.0.55 ===
+Routing table entry for 10.0.0.55/32 not found.","DNS Server IP on PC1 is set to 10.0.0.55, which is invalid/unreachable. Actual DNS Server IP is 10.0.0.53.",Layer 7 (Application),DNS,Medium
+CASE-105,Branch Router cannot reach HQ Network via Static Route,Branch-R1 cannot forward traffic to HQ LAN 10.100.0.0/16. Traffic dropped at Branch-R1.,Branch-R1 (Se0/0/0) <---> (Se0/0/0) HQ-R1 -> HQ LAN,"=== Branch-R1 show ip route ===
+Codes: C - connected, S - static
+Gateway of last resort is not set
+192.168.12.0/30 is subnetted, 1 subnets
+C    192.168.12.0 is directly connected, Serial0/0/0
+
+=== Branch-R1 show running-config | inc ip route ===
+ip route 10.100.0.0 255.255.0.0 192.168.12.6",Static route next-hop IP 192.168.12.6 is wrong. Serial interface IP is 192.168.12.2.,Layer 3 (Network),Routing,High
+CASE-106,ACL blocking Web traffic to DMZ Web Server,Clients can ping DMZ Server 172.16.1.100 but TCP port 80 / 443 web connections timeout.,Client -> Router Gi0/0/0 (Inbound ACL) -> DMZ Web Server (172.16.1.100),"=== Router show access-lists ===
+Extended IP access list 101_DMZ_FILTER
+    10 deny ip any host 172.16.1.100 (482 matches)
+    20 permit tcp any host 172.16.1.100 eq www
+    30 permit ip any any",ACL rule 10 explicitly denies all IP traffic to host 172.16.1.100 before rule 20 permits TCP port 80.,Layer 4 (Transport),ACL,High
+CASE-107,NAT overload fails for Internal LAN clients,Internal LAN hosts (192.168.1.0/24) cannot reach internet IP addresses. Pings timeout at Router WAN interface.,LAN Hosts -> Router Gi0/0/0 (Inside) -> Router Gi0/0/1 (Outside) -> ISP Router,"=== Router show ip nat statistics ===
+Total active translations: 0
+Outside interfaces: GigabitEthernet0/0/1
+Inside interfaces: (none)
+
+=== Router show ip interface brief ===
+GigabitEthernet0/0/0     192.168.1.1     YES manual up                    up
+GigabitEthernet0/0/1     203.0.113.2     YES manual up                    up",Interface GigabitEthernet0/0/0 is missing the command 'ip nat inside'.,Layer 3 (Network),NAT,Critical
+CASE-108,Wireless Laptop cannot connect to WPA2 Enterprise SSID,Laptop fails authentication when joining SSID 'Corp-Secure'. Status stays on 'Authenticating...',Wireless Laptop -> Lightweight AP -> WLC 3504 -> RADIUS Server (10.0.0.254),"=== WLC show radius summary ===
+Server Index..................................... 1
+Server Address................................... 10.0.0.254
+Shared Secret.................................... ******** (Mismatch detected on WLC log: Shared Secret Incorrect)
+Port Number...................................... 1812",RADIUS shared secret mismatch between Wireless LAN Controller (WLC) and RADIUS server.,Layer 7 (Application),Wireless,High
+CASE-109,Trunk Link Native VLAN Mismatch causes CDP Error,Traffic between Switch-1 and Switch-2 suffers packet loss. Syslog logs '%CDP-4-NATIVE_VLAN_MISMATCH'.,Switch-1 (Gi0/1) <---> (Gi0/1) Switch-2,"=== Switch-1 show interfaces trunk ===
+Port        Mode         Encapsulation  Status        Native vlan
+Gi0/1       on           802.1q         trunking      1
+
+=== Switch-2 show interfaces trunk ===
+Port        Mode         Encapsulation  Status        Native vlan
+Gi0/1       on           802.1q         trunking      99",Native VLAN mismatch: Switch-1 uses VLAN 1 while Switch-2 uses VLAN 99 on trunk link Gi0/1.,Layer 2 (Data Link),VLAN,Medium
+CASE-110,Duplicate IP address configured on Server and Printer,Intermittent network connectivity to Finance Server at 192.168.5.10. ARP table flips between MAC addresses.,Switch-1 -> Server-A (192.168.5.10) & Printer-B (192.168.5.10),"=== Switch-1 show mac address-table | inc 192.168.5.10 ===
+Vlan    Mac Address       Type        Ports
+---    -----------       --------    -----
+ 5     0050.56a1.b2c3    DYNAMIC     Fa0/10
+ 5     0011.2233.4455    DYNAMIC     Fa0/18
+
+=== Syslog Log ===
+%IP-4-DUPADDR: Duplicate address 192.168.5.10 on FastEthernet0/10, sourced by 0011.2233.4455",Duplicate IP 192.168.5.10 assigned to both Finance Server (Fa0/10) and Printer (Fa0/18).,Layer 3 (Network),Gateway,High
+CASE-111,Router Subinterface Shut Down,All hosts in VLAN 15 cannot reach their default gateway or any external subnets.,VLAN 15 Hosts -> Switch Trunk -> Router Gi0/0/0.15,"=== Router show ip interface brief ===
+Interface                  IP-Address      OK? Method Status                  Protocol
+Gi0/0/0                    unassigned      YES unset  up                      up
+Gi0/0/0.15                 192.168.15.1    YES manual administratively down   down",Router subinterface GigabitEthernet0/0/0.15 is administratively down.,Layer 1 (Physical),Routing,Critical
+CASE-112,OSPF Adjacency fails due to Hello Interval mismatch,R1 and R2 fail to establish OSPF neighbor state. Neighbor status stuck in Down or Init.,R1 Gi0/0/0 (10.0.0.1/30) <---> Gi0/0/0 R2 (10.0.0.2/30),"=== R1 show ip ospf interface Gi0/0/0 ===
+Gi0/0/0 is up, line protocol is up
+  Process ID 1, Router ID 1.1.1.1, Network Type BROADCAST, Cost: 1
+  Timer intervals configured, Hello 10, Dead 40, Wait 40, Retransmit 5
+
+=== R2 show ip ospf interface Gi0/0/0 ===
+Gi0/0/0 is up, line protocol is up
+  Process ID 1, Router ID 2.2.2.2, Network Type BROADCAST, Cost: 1
+  Timer intervals configured, Hello 30, Dead 120, Wait 120, Retransmit 5",OSPF Hello timer mismatch: R1 has Hello timer 10s while R2 has Hello timer 30s.,Layer 3 (Network),Routing,High
+CASE-113,Access Switchport configured in wrong VLAN,PC in HR department (intended VLAN 20) is getting IP address from Accounting VLAN 30 DHCP pool.,HR PC -> Switch Fa0/12 -> Router (Router-on-a-stick),"=== Switch show interfaces Fa0/12 switchport ===
+Name: Fa0/12
+Operational Mode: static access
+Access Mode VLAN: 30 (Accounting)
+Trunking Native Mode VLAN: 1 (default)",Switchport Fa0/12 is assigned to VLAN 30 instead of intended HR VLAN 20.,Layer 2 (Data Link),VLAN,Medium
+CASE-114,DHCP Scope IP Pool Exhausted,New wireless clients connecting to guest Wi-Fi fail to receive IP configuration.,Guest Laptops -> WLC -> DHCP Server Router,"=== Router show ip dhcp pool Guest_Pool ===
+Pool Guest_Pool :
+ Utilization mark (red/blue)    : 100 / 0
+ Subnet size (total/usable)    : 254 / 254
+ Total addresses                : 254
+ Leased addresses               : 254
+ Pending addresses              : 0",DHCP address pool 'Guest_Pool' has reached 100% utilization with 0 available leases remaining.,Layer 3 (Network),DHCP,High
+CASE-115,Static NAT Mismatch for External Web Access,External internet users cannot open hosted website at public IP 203.0.113.50.,Internet User -> Edge Router -> DMZ Web Server (192.168.100.50),"=== Edge Router show ip nat translations ===
+Pro Inside global      Inside local       Outside local      Outside global
+tcp 203.0.113.50:80    192.168.100.55:80  ---                ---
+
+=== Server Config ===
+IP Address: 192.168.100.50",Static NAT translation rule points to wrong inside local IP address 192.168.100.55 instead of 192.168.100.50.,Layer 3 (Network),NAT,High
+CASE-116,Missing Encapsulation dot1Q on Router Subinterface,Router subinterface GigabitEthernet0/0/0.10 fails to process tagged VLAN 10 frames.,Switch (Trunk) <---> Router Gi0/0/0.10,"=== Router show running-config interface Gi0/0/0.10 ===
+interface GigabitEthernet0/0/0.10
+ ip address 10.10.10.1 255.255.255.0
+ (Missing encapsulation dot1Q line)",Router subinterface Gi0/0/0.10 lacks the 'encapsulation dot1Q 10' command.,Layer 2 (Data Link),VLAN,Critical
+CASE-117,Inconsistent Subnet Mask on Router Interface,"Hosts in subnet 10.20.0.0/24 can reach gateway 10.20.0.1, but hosts past 10.20.0.128 lose connection.",Hosts (10.20.0.0/24 prefix) -> Router Gi0/1 (10.20.0.1),"=== Router show ip interface Gi0/1 ===
+GigabitEthernet0/1 is up, line protocol is up
+  Internet address is 10.20.0.1/25 (255.255.255.128)
+
+=== Host-130 Config ===
+IP: 10.20.0.130 Subnet: 255.255.255.0 Gateway: 10.20.0.1","Subnet mask mismatch: Router Gi0/1 is configured with /25 (255.255.255.128), treating 10.20.0.130 as out-of-subnet.",Layer 3 (Network),Gateway,High
+CASE-118,OSPF Passive Interface blocking adjacency,Router-A and Router-B connect over Gi0/0/1 but fail to form OSPF neighbor relationship.,Router-A (Gi0/0/1) <---> Router-B (Gi0/0/1),"=== Router-A show running-config | section ospf ===
+router ospf 1
+ router-id 1.1.1.1
+ passive-interface default
+ no passive-interface GigabitEthernet0/0/0
+ network 10.0.0.0 0.255.255.255 area 0",Interface GigabitEthernet0/0/1 is suppressed by 'passive-interface default' and missing 'no passive-interface GigabitEthernet0/0/1'.,Layer 3 (Network),Routing,High
+CASE-119,ACL Inbound vs Outbound Direction Misconfiguration,ACL 110 intended to filter traffic from Remote Subnet fails to block packets.,Remote Subnet -> Router Gi0/0/0 (Inbound) -> Router Gi0/0/1 (Outbound) -> Internal LAN,"=== Router show ip interface Gi0/0/0 ===
+GigabitEthernet0/0/0 is up, line protocol is up
+  Inbound access list is not set
+  Outbound access list is 110
+
+=== Router show access-lists 110 ===
+Extended IP access list 110
+    10 deny ip 192.168.50.0 0.0.0.255 any","Access list 110 is applied outbound on Gi0/0/0 instead of inbound, causing traffic entering Gi0/0/0 to bypass filtering.",Layer 3 (Network),ACL,High
+CASE-120,Port Security Violation shutting down switchport,User plugged personal laptop into desk jack and port immediately went dark (err-disabled).,Laptop -> Switch Fa0/5,"=== Switch show interfaces Fa0/5 status ===
+Port      Name               Status       Vlan       Duplex  Speed Type
+Fa0/5                        err-disabled 10         auto    auto  10/100BaseTX
+
+=== Switch show port-security interface Fa0/5 ===
+Port Security              : Enabled
+Port Status                : Secure-shutdown
+Violation Mode             : Shutdown
+Secure MAC Address Quant   : 1
+Last Source Address:Vlan   : a44e.31b2.99dd:10",Port security violation triggered on Fa0/5 due to unauthorized MAC address a44e.31b2.99dd.,Layer 2 (Data Link),VLAN,Medium
+CASE-121,Lightweight Access Point unable to join WLC,Access Point AP-1 LED blinks amber/red and status on WLC shows AP count 0.,AP-1 -> PoE Switch -> Router -> WLC (10.10.10.100),"=== AP-1 Console Log ===
+%CAPWAP-3-ERRORLOG: Did not receive CAPWAP discovery response from WLC.
+%DHCP-6-ADDRESS_ASSIGNED: IP 192.168.99.15/24, Option 43: Not configured.","DHCP Option 43 is missing in the AP subnet DHCP pool, preventing the AP from discovering WLC IP 10.10.10.100.",Layer 7 (Application),Wireless,High
+CASE-122,Missing Default Route on ISP Gateway Router,"Internal workstations can reach edge router WAN interface, but pings to public 8.8.8.8 fail with unreachable.",LAN -> Edge Router (203.0.113.1) <---> ISP Router,"=== Edge Router show ip route ===
+Codes: C - connected, S - static
+Gateway of last resort is not set
+192.168.1.0/24 is sub-netted, 1 subnets
+C    192.168.1.0 is directly connected, GigabitEthernet0/0/0
+203.0.113.0/30 is sub-netted, 1 subnets
+C    203.0.113.0 is directly connected, GigabitEthernet0/0/1",Edge Router has no Gateway of Last Resort (default route 'ip route 0.0.0.0 0.0.0.0 GigabitEthernet0/0/1').,Layer 3 (Network),Routing,Critical
+CASE-123,Trunk Allowed VLAN list excluding Management VLAN 99,Network administrators cannot SSH to Switch-2 (10.99.0.2) from Core Switch.,Core Switch (Gi0/1) <---> (Gi0/1) Switch-2,"=== Core Switch show interfaces trunk ===
+Port        Mode         Encapsulation  Status        Native vlan
+Gi0/1       on           802.1q         trunking      1
+Port        Vlans allowed on trunk
+Gi0/1       10,20,30
+(VLAN 99 is missing from allowed list)",Management VLAN 99 is omitted from the 'switchport trunk allowed vlan' list on link Gi0/1.,Layer 2 (Data Link),VLAN,Medium
+CASE-124,ACL Wildcard Mask inverted error,ACL intended to permit subnet 172.16.10.0/24 permits only IP 172.16.10.0 and denies all hosts.,Branch LAN -> Router Gi0/0/0 (Inbound ACL 10),"=== Router show access-lists 10 ===
+Standard IP access list 10
+    10 permit 172.16.10.0 255.255.255.0 (0 matches)
+(Note: Cisco IOS standard ACL expects wildcard mask 0.0.0.255, not subnet mask 255.255.255.0)",ACL rule 10 uses subnet mask 255.255.255.0 instead of wildcard mask 0.0.0.255.,Layer 3 (Network),ACL,High
+CASE-125,DNS Service Disabled on Packet Tracer Server,All host DNS queries to DNS Server 192.168.1.250 fail with ICMP Port Unreachable.,Hosts -> Switch -> Server (192.168.1.250),"=== Server Services Status ===
+HTTP Service: ON
+DHCP Service: OFF
+DNS Service: OFF (Service state turned off in Packet Tracer Services tab)",DNS Service is disabled in server configuration settings.,Layer 7 (Application),DNS,Medium
+CASE-126,Duplex Mismatch causing heavy collisions and slow throughput,File transfers between Switch-A and Switch-B are extremely slow with high collision counts.,Switch-A Fa0/24 <---> Fa0/24 Switch-B,"=== Switch-A show interfaces Fa0/24 ===
+Fa0/24 is up, line protocol is up
+  Full-duplex, 100Mb/s, media type is 100BaseTX
+
+=== Switch-B show interfaces Fa0/24 ===
+Fa0/24 is up, line protocol is up
+  Half-duplex, 100Mb/s, media type is 100BaseTX
+  5429 late collisions, 12044 deferred",Duplex mismatch: Switch-A is set to Full-duplex while Switch-B is set to Half-duplex.,Layer 1 (Physical),VLAN,Medium
+CASE-127,NAT Pool address range outside WAN interface subnet,"Overload NAT translates traffic to public pool 198.51.100.100-110, but ISP drops return packets.",Router Gi0/0/1 (203.0.113.2/30) <---> ISP Router (203.0.113.1/30),"=== Router show ip nat pool MY_POOL ===
+pool MY_POOL: netmask 255.255.255.0
+ start 198.51.100.100 end 198.51.100.110
+
+=== ISP Router show ip route 198.51.100.0 ===
+Routing table entry for 198.51.100.0/24 not found.",NAT pool addresses (198.51.100.x) are not routed by the ISP to Edge Router WAN interface 203.0.113.2.,Layer 3 (Network),NAT,High
+CASE-128,Wireless Security Pre-Shared Key (PSK) Mismatch,Smartphone fails to connect to Wi-Fi SSID 'Home-WiFi'. Stays stuck on 'Connecting...',Smartphone -> Wireless Router (SSID: Home-WiFi),"=== Wireless Router Config ===
+SSID: Home-WiFi
+Security: WPA2-Personal
+PSK Passphrase: SecurePassword2026!
+
+=== Smartphone Wi-Fi Profile ===
+SSID: Home-WiFi
+Security: WPA2-Personal
+Configured Passphrase: SecurePassword2026 (Missing exclamation mark)",WPA2 Pre-Shared Key mismatch on smartphone profile.,Layer 2 (Data Link),Wireless,Low
+CASE-129,DHCP Excluded Addresses Blocking Valid Host Range,"DHCP Server assigns IPs starting from 192.168.1.200, leaving hosts unable to get early pool IPs.",DHCP Server Router -> Switch -> Clients,"=== Router show running-config | inc dhcp ===
+ip dhcp excluded-address 192.168.1.1 192.168.1.199
+ip dhcp pool LAN_POOL
+ network 192.168.1.0 255.255.255.0
+ default-router 192.168.1.1","DHCP excluded address range is overly broad (excluding .1 through .199), limiting pool to only 55 usable host addresses.",Layer 3 (Network),DHCP,Low
+CASE-130,Static Route Pointing to Wrong Exit Interface,Router-1 traffic destined for 10.50.0.0/16 is forwarded out Gi0/0/0 instead of Gi0/0/1.,"Router-1 (Gi0/0/0 to LAN, Gi0/0/1 to WAN) -> Router-2","=== Router-1 show ip route ===
+Codes: C - connected, S - static
+S    10.50.0.0/16 is directly connected, GigabitEthernet0/0/0
+
+=== Router-1 show interfaces brief ===
+Gi0/0/0 is connected to LAN 192.168.1.0/24
+Gi0/0/1 is connected to WAN 10.255.0.1/30",Static route for 10.50.0.0/16 configured with wrong exit interface GigabitEthernet0/0/0 instead of WAN interface GigabitEthernet0/0/1.,Layer 3 (Network),Routing,High

@@ -1,57 +1,43 @@
-# Broken State Specification — CASE-001: Inter-VLAN Routing
+# Broken State Specification — NetSage-AI (CASE-001)
 
 ## 1. Fault Summary
 
 | Property | Value |
 |---|---|
 | **Case ID** | `CASE-001` |
-| **Title** | Inter-VLAN Routing & Server Connectivity Failure |
-| **Primary Fault** | Router R1 interface `GigabitEthernet0/1` towards Server VLAN 30 is `administratively down`, causing the destination route `192.168.30.0/24` to be absent from the FIB. |
+| **Title** | Gateway Interface Administratively Down to Server Subnet |
+| **Primary Fault** | `Netsage-Gateway` router interface `GigabitEthernet0/0` towards `NetSage_AI_Server` (`192.168.1.10`) is `administratively down`, causing the destination route `192.168.1.0/24` to be absent from the FIB. |
 | **OSI Layer** | Layer 3 (Network) |
-| **Concept Tag** | Inter-VLAN Routing / Interface State |
+| **Concept Tag** | Inter-Subnet Routing / Gateway Interface State |
 | **Severity** | HIGH |
 
 ---
 
 ## 2. Observed Symptoms
 
-- **PC-1 (`192.168.10.10`)**:
-  - Local Gateway Ping (`ping 192.168.10.1`): **SUCCESS (100% reply)**
-  - Inter-VLAN Staff Ping (`ping 192.168.20.10`): **SUCCESS (100% reply)**
-  - Server Ping (`ping 192.168.30.10`): **FAILURE (Destination host unreachable / Request timed out)**
-- **Packet Drop Point**: Router R1 drops packets destined for `192.168.30.10` due to missing active route / link down state on `Gi0/1`.
+- **Admin-PC (`192.168.2.10`)**:
+  - Local Gateway Ping (`ping 192.168.2.1`): **SUCCESS (100% reply)**
+  - Local Client Ping (`ping 192.168.2.20`): **SUCCESS (100% reply)**
+  - Server Ping (`ping 192.168.1.10`): **FAILURE (Destination host unreachable / Request timed out)**
+  - DNS Resolution / Web Access (`http://netsage.ai`): **FAILURE (Server uncontactable)**
 
 ---
 
 ## 3. Broken CLI Telemetry (`show` Commands)
 
-### A. `show ip route` on R1
+### A. `show ip route` on Netsage-Gateway
 ```
 Gateway of last resort is not set
 
-C    192.168.10.0/24 is directly connected, GigabitEthernet0/0.10
-L    192.168.10.1/32 is directly connected, GigabitEthernet0/0.10
-C    192.168.20.0/24 is directly connected, GigabitEthernet0/0.20
-L    192.168.20.1/32 is directly connected, GigabitEthernet0/0.20
+C    192.168.2.0/24 is directly connected, GigabitEthernet0/1
+L    192.168.2.1/32 is directly connected, GigabitEthernet0/1
 ```
-*(Notice: Destination subnet `192.168.30.0/24` is absent from routing table).*
+*(Notice: Destination subnet `192.168.1.0/24` is absent from routing table).*
 
-### B. `show ip interface brief` on R1
+### B. `show ip interface brief` on Netsage-Gateway
 ```
 Interface              IP-Address      OK? Method Status                Protocol
-GigabitEthernet0/0    unassigned      YES unset  up                    up
-GigabitEthernet0/0.10 192.168.10.1    YES manual up                    up
-GigabitEthernet0/0.20 192.168.20.1    YES manual up                    up
-GigabitEthernet0/1    192.168.30.1    YES manual administratively down down
+GigabitEthernet0/0    192.168.1.1     YES manual administratively down down
+GigabitEthernet0/1    192.168.2.1     YES manual up                    up
 ```
-*(Evidence: Interface Gi0/1 is administratively down).*
-
-### C. `show interfaces trunk` on SW1
-```
-Port        Mode         Encapsulation  Status        Native vlan
-Gi0/1       on           802.1q         trunking      1
-
-Port        Vlans allowed on trunk
-Gi0/1       10,20
-```
-*(Evidence: Trunk encapsulation and allowed VLANs 10,20 are correctly functioning between SW1 and R1).*
+*(Evidence: Interface GigabitEthernet0/0 is administratively down).*
