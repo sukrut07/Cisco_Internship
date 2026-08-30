@@ -13,8 +13,10 @@ import { useCase } from '../context/CaseContext';
 import { GlassPanel, GlassDeep } from '../components/common/GlassWrappers';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { VerificationCheck } from '../types';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export const VerificationPage: React.FC = () => {
+  useDocumentTitle('Live Verification Probes');
   const { currentCase, runVerification, resetDemoMode } = useCase();
   const navigate = useNavigate();
   const [isRunning, setIsRunning] = useState(false);

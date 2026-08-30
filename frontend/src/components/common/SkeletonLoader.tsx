@@ -11,7 +11,9 @@ export const SkeletonLoader: React.FC<SkeletonProps> = ({ className = 'h-6 w-ful
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className={`animate-pulse rounded bg-white/[0.06] border border-white/[0.04] ${className}`}
+          role="status"
+          aria-label="Loading content..."
+          className={`skeleton-shimmer rounded-xl bg-white/[0.04] border border-white/[0.04] ${className}`}
         />
       ))}
     </>
