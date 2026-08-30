@@ -1,160 +1,155 @@
-# NetSage AI — Backend
+# NetSage AI — Production Backend
 
-AI-assisted Cisco network troubleshooting backend. Combines deterministic rule-based analysis with LLM diagnosis. **Human review is always required** before any diagnosis becomes final.
+AI-assisted Cisco network troubleshooting system combining deterministic Cisco rule checks with multi-provider LLM diagnosis, multi-signal evidence grounding, mandatory human-in-the-loop review, and immutable audit trailing.
+
+> **CRITICAL SAFETY PRINCIPLE**: NetSage AI is an advisory platform. The backend **NEVER** autonomously executes Cisco commands on devices. All remediation commands are recorded for audit purposes only and must be applied and verified by authorized human engineers.
 
 ---
 
-## Quick Start (Local)
+## Key Capabilities
 
+- **35 Seeded Realistic Cisco Cases**: Covering VLANs, Trunks, Static Routing, Inter-VLAN Routing, DHCP, DNS, ACLs, NAT, and Interface status.
+- **Deterministic Python Rule Engine**: 11 domain rules validating show outputs, topology, subnets, gateways, and configurations without hallucinations.
+- **Multi-Provider AI Layer**: Seamless support for `mock` (deterministic local tests), `openai` (GPT-4o), `gemini` (Gemini 1.5 Flash), and `anthropic` (Claude 3.5 Sonnet) with automatic tenacity exponential backoff retries and timeouts.
+- **Adversarial Prompt Injection Boundary**: All user show commands and topology data are framed strictly as untrusted evidence blocks.
+- **Deterministic Evidence Grounding**: Validates AI root causes against actual IP addresses, interfaces, VLANs, subnets, and technical status tokens.
+- **Mandatory Human Review**: State machine requires explicit human decision (`ACCEPTED`, `EDITED`, `REJECTED`) before any case can be closed.
+- **Evidence & Audit Trail APIs**: Full queryable endpoints for raw & parsed evidence (`/evidence`) and chronological audit logging (`/audit-trail`).
+- **Alembic Database Migrations**: Enterprise-grade schema management with versioned migrations.
+- **Security & Reliability**: Request body size limits (HTTP 413), execution timing middleware, recursive secret redaction, and optional API-key authentication.
+- **122 Automated Tests**: Comprehensive unit, integration, and security test suite passing with 0 failures and 0 warnings.
+
+---
+
+## Quick Start (Local Development)
+
+### 1. Setup Environment
 ```bash
-# 1. Clone and enter backend
 cd backend
-
-# 2. Create virtual environment
 python -m venv venv
-venv\Scripts\activate      # Windows
-# source venv/bin/activate  # Linux/Mac
 
-# 3. Install dependencies
+# Windows:
+venv\Scripts\activate
+# Linux / macOS:
+source venv/bin/activate
+
 pip install -r requirements.txt
+```
 
-# 4. Configure environment
-copy .env.example .env    # Windows
-# cp .env.example .env    # Linux/Mac
+### 2. Configure Environment
+```bash
+# Windows:
+copy .env.example .env
+# Linux / macOS:
+cp .env.example .env
+```
+*(Default settings use `AI_PROVIDER=mock` and SQLite, working out of the box with zero external keys)*
 
-# 5. (Optional) Edit .env — default AI_PROVIDER=mock works without any API key
+### 3. Run Database Migrations & Seed Cases
+```bash
+# Apply schema via Alembic:
+alembic upgrade head
 
-# 6. Seed the database (35 realistic Cisco cases)
+# Seed 35 realistic Cisco troubleshooting cases:
 python scripts/seed_database.py
-
-# 7. Start the server
-uvicorn app.main:app --reload
-
-# 8. Open docs
-start http://localhost:8000/docs
 ```
+
+### 4. Start the Application Server
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+- **Interactive OpenAPI Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc Documentation**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **Health Check**: [http://localhost:8000/health](http://localhost:8000/health)
+- **Readiness Check**: [http://localhost:8000/ready](http://localhost:8000/ready)
 
 ---
 
-## API Overview
+## API Endpoints Reference
 
-All endpoints are under `/api/v1/`.
+All API routes are served under `/api/v1/`:
 
+### Cases & Evidence
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/cases` | Create a case |
-| `GET` | `/api/v1/cases` | List cases (paginated, filtered) |
-| `GET` | `/api/v1/cases/{id}` | Get a case |
-| `POST` | `/api/v1/cases/{id}/diagnose` | Run AI + rule diagnosis |
-| `GET` | `/api/v1/cases/{id}/diagnoses` | List all diagnoses |
-| `POST` | `/api/v1/cases/{id}/review` | Submit human review |
-| `POST` | `/api/v1/cases/{id}/fix` | Record human-applied fix |
-| `POST` | `/api/v1/cases/{id}/verify` | Record verification result |
-| `GET` | `/api/v1/dashboard/summary` | Dashboard metrics |
-| `GET` | `/api/v1/responsible-ai/summary` | Responsible AI metrics |
-| `POST` | `/api/v1/evaluation/run` | Run internal evaluation |
+|---|---|---|
+| `GET` | `/api/v1/cases` | List cases with search, category, severity, and pagination |
+| `POST` | `/api/v1/cases` | Create a new troubleshooting case |
+| `GET` | `/api/v1/cases/{case_id}` | Get full case details |
+| `PUT` | `/api/v1/cases/{case_id}` | Update case parameters |
+| `DELETE` | `/api/v1/cases/{case_id}` | Delete a case |
+| `GET` | `/api/v1/cases/{case_id}/evidence` | Get raw and parsed show-command evidence |
 
-**Interactive docs**: `http://localhost:8000/docs`
+### Diagnosis & Rules
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/cases/{case_id}/diagnose` | Run AI + Rule diagnosis pipeline |
+| `GET` | `/api/v1/cases/{case_id}/diagnoses` | Get historical diagnoses for a case |
+| `GET` | `/api/v1/diagnoses/{diagnosis_id}` | Get a single diagnosis record |
+| `POST` | `/api/v1/rules/run` | Execute deterministic rules directly against context |
+| `GET` | `/api/v1/rules` | List all available deterministic rules |
+
+### Human Review & Fix Workflow
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/cases/{case_id}/review` | Submit human review (`ACCEPTED`, `EDITED`, `REJECTED`) |
+| `GET` | `/api/v1/cases/{case_id}/reviews` | List review decisions for a case |
+| `GET` | `/api/v1/reviews/{review_id}` | Get review by ID |
+| `POST` | `/api/v1/cases/{case_id}/fix` | Record human-applied fix (never auto-executed) |
+| `POST` | `/api/v1/cases/{case_id}/verify` | Record post-fix verification (`SUCCESS`, `FAILED`) |
+| `GET` | `/api/v1/cases/{case_id}/verifications` | List verification records |
+
+### Audit & Analytics
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/cases/{case_id}/audit-trail` | Chronological immutable lifecycle audit trail |
+| `GET` | `/api/v1/dashboard/summary` | Global KPIs (Cases, Diagnoses, Reviews, Agreement) |
+| `GET` | `/api/v1/dashboard/categories` | Breakdown by network category |
+| `GET` | `/api/v1/dashboard/severities` | Breakdown by severity level |
+| `GET` | `/api/v1/dashboard/timeline` | Daily activity timeline |
+| `GET` | `/api/v1/responsible-ai/summary` | RAI metrics (Correction rate, Grounding warnings) |
+| `GET` | `/api/v1/responsible-ai/corrections` | Cases where human engineers edited AI findings |
+| `POST` | `/api/v1/evaluation/run` | Run internal benchmark evaluation against ground truth |
+| `GET` | `/api/v1/evaluation/summary` | Get latest evaluation metrics summary |
 
 ---
 
-## Full Workflow Example
+## State Machine Lifecycle
 
-```bash
-BASE=http://localhost:8000/api/v1
-
-# 1. Diagnose a seeded case
-curl -X POST $BASE/cases/CASE-001/diagnose | jq .
-
-# 2. Accept the diagnosis (human review)
-DIAG_ID=$(curl -s -X POST $BASE/cases/CASE-001/diagnose | jq .ai_diagnosis.id)
-curl -X POST $BASE/cases/CASE-001/review \
-  -H "Content-Type: application/json" \
-  -d "{\"diagnosis_id\": $DIAG_ID, \"decision\": \"ACCEPTED\", \"reviewer\": \"engineer-1\"}"
-
-# 3. Record fix (NOT auto-executed)
-REVIEW_ID=$(curl -s $BASE/cases/CASE-001/reviews | jq '.[0].id')
-curl -X POST $BASE/cases/CASE-001/fix \
-  -H "Content-Type: application/json" \
-  -d "{\"review_id\": $REVIEW_ID, \"commands\": [\"ip route 192.168.30.0 255.255.255.0 10.0.0.2\"], \"description\": \"Added missing static route\", \"performed_by\": \"engineer-1\"}"
-
-# 4. Verify fix worked
-curl -X POST $BASE/cases/CASE-001/verify \
-  -H "Content-Type: application/json" \
-  -d "{\"review_id\": $REVIEW_ID, \"verification_status\": \"SUCCESS\", \"verification_method\": \"PING\", \"verification_evidence\": \"Reply from 192.168.30.10\", \"verified_by\": \"engineer-1\"}"
-
-# 5. Check responsible AI metrics
-curl $BASE/responsible-ai/summary | jq .
+```mermaid
+stateDiagram-v2
+    [*] --> CREATED
+    CREATED --> AWAITING_HUMAN_REVIEW : Run Diagnosis
+    AWAITING_HUMAN_REVIEW --> ACCEPTED : Human Review ACCEPT
+    AWAITING_HUMAN_REVIEW --> EDITED : Human Review EDIT
+    AWAITING_HUMAN_REVIEW --> REJECTED : Human Review REJECT
+    ACCEPTED --> FIX_RECORDED : Record Fix (Human Applied)
+    EDITED --> FIX_RECORDED : Record Fix (Human Applied)
+    FIX_RECORDED --> VERIFIED : Record Verification (SUCCESS)
+    FIX_RECORDED --> VERIFICATION_FAILED : Record Verification (FAILED)
+    VERIFICATION_FAILED --> AWAITING_HUMAN_REVIEW : Re-diagnose
+    VERIFIED --> AWAITING_HUMAN_REVIEW : Re-diagnose (Lab Practice)
 ```
 
 ---
 
-## AI Providers
-
-Set `AI_PROVIDER` in `.env`:
-
-| Value | Description |
-|-------|-------------|
-| `mock` | **Default** — deterministic responses, no API key needed |
-| `openai` | OpenAI GPT-4o — set `AI_API_KEY` |
-| `gemini` | Google Gemini — set `AI_API_KEY` |
-| `anthropic` | Anthropic Claude — set `AI_API_KEY` |
-
----
-
-## Run Tests
+## Running Automated Tests & Coverage
 
 ```bash
-pytest
-# or with coverage
+# Run complete test suite (122 tests):
+pytest -v
+
+# Run with test coverage:
 pytest --cov=app --cov-report=term-missing
 ```
 
 ---
 
-## Architecture
-
-```
-backend/
-├── app/
-│   ├── main.py              # FastAPI app entry point
-│   ├── core/                # Config, DB, logging, security, exceptions
-│   ├── models/              # SQLAlchemy ORM models
-│   ├── schemas/             # Pydantic request/response schemas
-│   ├── parsers/             # Cisco show-command parsers
-│   ├── rules/               # Deterministic rule engine (11 rules)
-│   ├── ai/                  # AI provider abstraction (mock/OpenAI/Gemini/Anthropic)
-│   ├── services/            # Business logic services
-│   └── api/routes/          # FastAPI route handlers
-├── data/
-│   └── seed_cases.json      # 35 realistic Cisco troubleshooting cases
-├── scripts/
-│   ├── seed_database.py     # Seed DB with 35 cases
-│   └── import_cases.py      # Import from CSV
-├── prompts/                 # AI system prompts
-└── tests/                   # Test suite (50+ tests)
-```
-
----
-
-## Safety Principles
-
-- **Never executes Cisco commands** — commands are strings stored as data only
-- **Human review always required** — `requires_human_review: true` is enforced at the API layer
-- **AI is an assistant** — cannot autonomously modify networks
-- **Evidence grounding** — AI citations cross-checked against supplied show outputs
-- **Audit trail** — every significant event is logged to the `audit_logs` table
-
----
-
-## Importing Custom Cases
+## Docker Deployment
 
 ```bash
-# From CSV (see data/cases.csv for format)
-python scripts/import_cases.py --file data/my_cases.csv
+# Build and run with Docker Compose:
+docker-compose up --build -d
 
-# Dry run (validate only)
-python scripts/import_cases.py --file data/my_cases.csv --dry-run
+# Check service logs:
+docker-compose logs -f backend
 ```
-
-CSV columns: `case_id, category, title, symptom, topology, show_outputs (JSON), expected_fault, expected_osi_layer, concept, severity, expected_fix (JSON), next_command, tags (JSON)`
