@@ -1,6 +1,11 @@
 # NetSage-AI
 > **Autonomous Network Monitoring & Intelligent Traffic Analytics Platform with Deterministic Layer 1–7 Rule Checking and Mandatory Human-in-the-Loop Review.**
 
+[![CI/CD Tests](https://img.shields.io/badge/Tests-126%2F126%20Passed-brightgreen)](https://github.com/sukrut07/Cisco_Internship)
+[![Quality Gate](https://img.shields.io/badge/Quality%20Gate-17%2F17%20Verified-blue)](https://github.com/sukrut07/Cisco_Internship)
+[![Track](https://img.shields.io/badge/Cisco--AICTE%20VIP-2026-orange)](https://github.com/sukrut07/Cisco_Internship)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 **Cisco-AICTE Virtual Internship Program (VIP 2026) — Project 2 (Applied AI + Network Troubleshooting)**  
 **Author:** Sukrut Dusane (`sukrut07`)
 
@@ -8,9 +13,10 @@
 
 ## 1. System Overview
 
-NetSage-AI is an autonomous network monitoring and intelligent traffic analytics platform that bridges simulated Cisco network infrastructure with data-driven anomaly detection and grounded AI troubleshooting.
+**NetSage-AI** is an autonomous network monitoring and intelligent traffic analytics platform that bridges simulated Cisco network infrastructure with data-driven anomaly detection and grounded AI troubleshooting.
 
 Built upon an enterprise dual-subnet topology (`Netsage-Gateway`, `NetSage_AI_Server` at `192.168.1.10`, `Admin-PC` at `192.168.2.10`, and `Client-PC1` at `192.168.2.20`) with integrated DNS (`netsage.ai`) and HTTP management services, NetSage-AI combines:
+
 1. **Deterministic Rule Engine (Layer 1–7):** 11 protocol checks (interface state, duplicate IP, subnet masks, default gateways, static/dynamic routing, VLAN trunking, ACL deny filters, NAT translations, DHCP snooping/pools, and DNS resolution).
 2. **Multi-Provider AI Grounding Engine:** Supports Mock, OpenAI, Google Gemini, and Anthropic Claude with strict anti-hallucination citation parsing against Cisco `show` command outputs.
 3. **Mandatory Human-in-the-Loop Review Gate:** AI provides diagnostic recommendations and stages CLI remediation commands; authorized human engineers must explicitly review (`ACCEPTED`, `EDITED`, or `REJECTED`) before fix staging or verification.
@@ -67,7 +73,7 @@ docker-compose up --build
 
 ### Option 2: Local Python & Node Setup
 
-#### 1. Backend (FastAPI)
+#### 1. Backend Setup (FastAPI)
 ```bash
 cd backend
 python -m venv .venv
@@ -81,22 +87,26 @@ python scripts/seed_database.py
 uvicorn app.main:app --reload --port 8000
 ```
 
-#### 2. Frontend (React 19 / Vite)
+#### 2. Frontend Setup (React 19 / Vite)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+Open `http://localhost:5173` in your browser.
 
 #### 3. Standalone Python Rule Checker (No LLM Required)
 ```bash
+# Run deterministic checks for CASE-001
 python checker/rule_checker.py --case CASE-001
+
+# Run checks across all 35 cases
 python checker/rule_checker.py --all
 ```
 
 ---
 
-## 3. VIP 2026 Deliverables Structure
+## 3. VIP 2026 Deliverables Directory Tree
 
 ```
 .
@@ -105,7 +115,7 @@ python checker/rule_checker.py --all
 ├── prompts/diagnose_prompt.md     # 12-field strict JSON prompt contract + 3 worked examples
 ├── checker/
 │   ├── rule_checker.py            # Standalone Layer 1-7 deterministic Python rule engine
-│   └── README.md                  # Rule engine guide & usage
+│   └── README.md                  # Rule engine guide & CLI usage
 ├── responsible_ai/
 │   ├── review_log.csv             # Mandatory human review ledger
 │   └── README.md                  # 5 documented human correction case studies
@@ -135,7 +145,21 @@ python checker/rule_checker.py --all
 
 ---
 
-## 4. Automated Testing & Verification
+## 4. Final Submission Package (Maximum 3 Files Constraint)
+
+Per official Cisco-AICTE VIP 2026 instructions, the final submission ZIP must contain **at most 3 files**:
+
+```
+NetSageAI_Submission.zip
+│
+├── NetSageAI_Project_Report.pdf                 # Exported from docs/NetSageAI_Project_Report.md
+├── NetSageAI_Sample_Case_01_InterVLAN_Routing.pkt# Created in Cisco Packet Tracer
+└── NetSageAI_Source_Code.zip                    # Clean source code archive
+```
+
+---
+
+## 5. Automated Testing & Verification
 
 ```bash
 # Run backend test suite (126 unit & integration tests)
@@ -152,5 +176,5 @@ npm run build
 
 ---
 
-## 5. License
+## 6. License
 NetSage-AI is licensed under the MIT License.
