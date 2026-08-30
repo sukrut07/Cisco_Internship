@@ -17,7 +17,7 @@ services:
       - ENVIRONMENT=production
       - DEBUG=false
       - LOG_LEVEL=INFO
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:80,http://localhost
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:80,http://localhost,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:8000,http://0.0.0.0:3000
     volumes:
       - netsage_data:/app/data
     restart: unless-stopped

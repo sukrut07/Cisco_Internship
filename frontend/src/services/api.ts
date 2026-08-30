@@ -19,9 +19,13 @@ import {
   FusionStatus,
 } from '../types';
 
-// API Base URL from Vite environment variable with safe fallback
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-const API_V1 = `${API_BASE}/api/v1`;
+// API Base URL from Vite environment variable.
+// In development: defaults to http://localhost:8000 for direct FastAPI access.
+// In Docker production: VITE_API_BASE_URL is intentionally empty so requests
+// use relative paths (/api/...) which Nginx proxies to the backend container.
+const _rawBase = import.meta.env.VITE_API_BASE_URL;
+const API_BASE = (_rawBase !== undefined && _rawBase !== '') ? _rawBase : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:8000' : '');
+const API_V1 = API_BASE ? `${API_BASE}/api/v1` : '/api/v1';
 
 let simulateApiError = false;
 
@@ -542,11 +546,11 @@ export const api = {
   },
 
   async getCategoryDistribution(): Promise<any[]> {
-    return request<any[]>(`${API_V1}/dashboard/category-distribution`);
+    return request<any[]>(`${API_V1}/dashboard/categories`);
   },
 
   async getSeverityDistribution(): Promise<any[]> {
-    return request<any[]>(`${API_V1}/dashboard/severity-distribution`);
+    return request<any[]>(`${API_V1}/dashboard/severity`);
   },
 
   async getAgreementMetrics(): Promise<any> {
@@ -554,7 +558,7 @@ export const api = {
   },
 
   async getRuleStats(): Promise<any[]> {
-    return request<any[]>(`${API_V1}/dashboard/rule-stats`);
+    return request<any[]>(`${API_V1}/dashboard/rules`);
   },
 
   // -------------------------------------------------------------------------
@@ -566,15 +570,17 @@ export const api = {
     let healthOk = false;
     let readyOk = false;
 
+    const HEALTH_BASE = API_BASE || '';
+
     try {
-      const h = await request<any>(`${API_BASE}/health`);
+      const h = await request<any>(`${HEALTH_BASE}/health`);
       healthOk = h?.status === 'healthy';
     } catch {
       healthOk = false;
     }
 
     try {
-      const r = await request<any>(`${API_BASE}/ready`);
+      const r = await request<any>(`${HEALTH_BASE}/ready`);
       readyOk = r?.status === 'ready';
     } catch {
       readyOk = false;
