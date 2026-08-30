@@ -1,0 +1,32 @@
+{
+  "case_id": "CASE-001",
+  "root_cause": "Router R1 interface GigabitEthernet0/1 (gateway for Server subnet 192.168.30.0/24) is administratively down, preventing route installation in the FIB and dropping inter-VLAN packets.",
+  "confidence": 0.94,
+  "confidence_label": "high",
+  "osi_layer": "Layer 3",
+  "concept": "Inter-VLAN Routing / Interface State",
+  "severity": "HIGH",
+  "evidence": [
+    "show ip interface brief shows GigabitEthernet0/1 status is administratively down and protocol is down.",
+    "show ip route confirms destination network 192.168.30.0/24 is absent from routing table and no default route is set.",
+    "show interfaces trunk on SW1 confirms Gi0/1 trunk is active with VLAN 10 and 20 forwarding normally."
+  ],
+  "next_command": "show ip interface brief GigabitEthernet0/1",
+  "alternative_causes": [
+    "Missing static route on R1 if Gi0/1 were up.",
+    "Server-1 gateway misconfigured if interface were up."
+  ],
+  "fix_steps": [
+    "Access Router R1 in privileged EXEC mode.",
+    "Enter configuration mode: configure terminal",
+    "Enter interface configuration: interface GigabitEthernet0/1",
+    "Enable interface: no shutdown",
+    "Exit configuration mode: end"
+  ],
+  "verification_steps": [
+    "Verify interface state: show ip interface brief (ensure Gi0/1 is up/up).",
+    "Verify routing table: show ip route (ensure 192.168.30.0/24 is present).",
+    "Test end-to-end ping from PC-1 (192.168.10.10) to Server-1 (192.168.30.10)."
+  ],
+  "requires_human_review": true
+}

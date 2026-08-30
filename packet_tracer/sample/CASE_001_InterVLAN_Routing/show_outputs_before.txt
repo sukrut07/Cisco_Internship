@@ -1,0 +1,65 @@
+================================================================================
+SAMPLE TELEMETRY CAPTURED FROM CISCO PACKET TRACER — BROKEN BASELINE (CASE-001)
+================================================================================
+Note: Captured prior to remediation. Shows interface shutdown on R1 Gi0/1 and missing route.
+
+--------------------------------------------------------------------------------
+Device: R1 (Router 1941)
+Command: show ip interface brief
+--------------------------------------------------------------------------------
+Interface              IP-Address      OK? Method Status                Protocol
+GigabitEthernet0/0    unassigned      YES unset  up                    up
+GigabitEthernet0/0.10 192.168.10.1    YES manual up                    up
+GigabitEthernet0/0.20 192.168.20.1    YES manual up                    up
+GigabitEthernet0/1    192.168.30.1    YES manual administratively down down
+
+--------------------------------------------------------------------------------
+Device: R1 (Router 1941)
+Command: show ip route
+--------------------------------------------------------------------------------
+Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area 
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
+       E1 - OSPF external type 1, E2 - OSPF external type 2, E - EGP
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route
+
+Gateway of last resort is not set
+
+      192.168.10.0/24 is subnetted, 2 subnets
+C        192.168.10.0 is directly connected, GigabitEthernet0/0.10
+L        192.168.10.1/32 is directly connected, GigabitEthernet0/0.10
+      192.168.20.0/24 is subnetted, 2 subnets
+C        192.168.20.0 is directly connected, GigabitEthernet0/0.20
+L        192.168.20.1/32 is directly connected, GigabitEthernet0/0.20
+
+--------------------------------------------------------------------------------
+Device: SW1 (Catalyst 2960)
+Command: show interfaces trunk
+--------------------------------------------------------------------------------
+Port        Mode         Encapsulation  Status        Native vlan
+Gig0/1      on           802.1q         trunking      1
+
+Port        Vlans allowed on trunk
+Gig0/1      10,20
+
+Port        Vlans allowed and active in management domain
+Gig0/1      10,20
+
+Port        Vlans in spanning tree forwarding state and not pruned
+Gig0/1      10,20
+
+--------------------------------------------------------------------------------
+Device: SW1 (Catalyst 2960)
+Command: show vlan brief
+--------------------------------------------------------------------------------
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1    default                          active    Fa0/3, Fa0/4, Fa0/5, Fa0/6
+10   Students                         active    Fa0/1
+20   Staff                            active    Fa0/2
+1002 fddi-default                     active    
+1003 token-ring-default               active    
+1004 fddinet-default                  active    
+1005 trnet-default                    active    
