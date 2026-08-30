@@ -360,44 +360,53 @@ class MockAIProvider(BaseAIProvider):
         return MOCK_DEFAULT_DIAGNOSIS
 
     def _build_evidence(self, context: DiagnosisContext, template: dict) -> list[dict]:
-        """Build evidence list from available show outputs."""
+        """Build evidence list from all available show outputs dynamically."""
         evidence = []
 
-        if "show ip route" in context.show_outputs:
-            evidence.append(
-                {
-                    "source": "show ip route",
-                    "observation": "Routing table analyzed for destination network reachability.",
-                }
-            )
-        if "show ip interface brief" in context.show_outputs:
-            evidence.append(
-                {
-                    "source": "show ip interface brief",
-                    "observation": "Interface status reviewed for up/down states.",
-                }
-            )
-        if "show vlan brief" in context.show_outputs:
-            evidence.append(
-                {
-                    "source": "show vlan brief",
-                    "observation": "VLAN database checked for VLAN existence and port assignments.",
-                }
-            )
-        if "show interfaces trunk" in context.show_outputs:
-            evidence.append(
-                {
-                    "source": "show interfaces trunk",
-                    "observation": "Trunk interfaces reviewed for VLAN allowed lists.",
-                }
-            )
-        if "show access-lists" in context.show_outputs:
-            evidence.append(
-                {
-                    "source": "show access-lists",
-                    "observation": "ACL entries reviewed for deny rules with match counts.",
-                }
-            )
+        # Map known command types to specific meaningful observations
+        cmd_descriptions = {
+            "show ip route": "Routing table analyzed for destination network reachability.",
+            "show ip interface brief": "Interface status reviewed for up/down states.",
+            "show vlan brief": "VLAN database checked for VLAN existence and port assignments.",
+            "show interfaces trunk": "Trunk interfaces reviewed for VLAN allowed lists.",
+            "show access-lists": "ACL entries reviewed for deny rules with match counts.",
+            "show ip nat translations": "NAT translation table checked for active translations.",
+            "show ip nat statistics": "NAT statistics checked for hit counters and interface bindings.",
+            "show ip dhcp binding": "DHCP binding table checked for leased IP assignments.",
+            "show ip dhcp pool": "DHCP pool utilization checked for available address blocks.",
+            "show hosts": "DNS host table reviewed for static entries and nameserver configuration.",
+            "show ip hosts": "DNS host table reviewed for static entries and nameserver configuration.",
+            "nslookup": "DNS lookup test examined for timeouts or name resolution failures.",
+            "show running-config": "Running configuration checked for interface, routing, and service syntax.",
+            "show run": "Running configuration checked for interface, routing, and service syntax.",
+            "show cdp neighbors": "CDP neighbor adjacency checked for link-level device connectivity.",
+            "show ip ospf neighbor": "OSPF neighbor adjacency checked for 2-WAY/FULL states.",
+            "show ip eigrp neighbors": "EIGRP neighbor adjacency checked for active peerings.",
+            "show spanning-tree": "Spanning-tree topology checked for root bridge and blocked ports.",
+            "show etherchannel summary": "Port-channel bundle status checked for protocol negotiation.",
+        }
+
+        for cmd_name, cmd_output in context.show_outputs.items():
+            if not cmd_output or not cmd_output.strip():
+                continue
+
+            # Look up standard observation or extract first non-empty line
+            obs = None
+            clean_cmd = cmd_name.lower().strip()
+            for known_cmd, desc in cmd_descriptions.items():
+                if known_cmd in clean_cmd or clean_cmd in known_cmd:
+                    obs = desc
+                    break
+
+            if not obs:
+                # Extract first meaningful telemetry line from output
+                lines = [l.strip() for l in cmd_output.splitlines() if l.strip() and not l.startswith("!")]
+                obs = f"Telemetry finding from {cmd_name}: {lines[0]}" if lines else f"Command output from {cmd_name} evaluated."
+
+            evidence.append({
+                "source": cmd_name,
+                "observation": obs,
+            })
 
         # Fallback if no show outputs
         if not evidence:

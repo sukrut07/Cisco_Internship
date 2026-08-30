@@ -9,7 +9,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.api.dependencies import get_db, verify_api_key
 from app.core.exceptions import CaseNotFoundError, DuplicateCaseError
 from app.schemas.case import CaseCreate, CaseResponse, CaseSummary, CaseUpdate
 from app.schemas.common import PaginatedResponse

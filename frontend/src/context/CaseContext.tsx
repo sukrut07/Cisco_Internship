@@ -10,11 +10,12 @@ interface CaseContextValue {
   selectedCaseId: string;
   setSelectedCaseId: (id: string) => void;
   loadCase: (id: string) => Promise<void>;
+  runDiagnosis: (caseId: string) => Promise<void>;
   submitReview: (caseId: string, decision: ReviewDecision) => Promise<void>;
   approveFix: (caseId: string) => Promise<void>;
   runVerification: (caseId: string) => Promise<void>;
   resetDemoMode: () => Promise<void>;
-  refreshCases: () => Promise<void>;
+  refreshCases: (isManual?: boolean) => Promise<void>;
 }
 
 const CaseContext = createContext<CaseContextValue | undefined>(undefined);
@@ -26,29 +27,40 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const { showToast } = useToast();
 
-  const refreshCases = useCallback(async () => {
+  const refreshCases = useCallback(async (isManual: boolean = false) => {
     try {
       setLoading(true);
       const data = await api.getCases();
       setCases(data);
-      if (selectedCaseId) {
-        const found = data.find(c => c.case_id.toLowerCase() === selectedCaseId.toLowerCase()) || data[0];
-        setCurrentCase(found || null);
+      const targetId = selectedCaseId || (data.length > 0 ? data[0].case_id : 'CASE-004');
+      if (targetId) {
+        const fullCase = await api.getCaseById(targetId).catch(() => null);
+        if (fullCase) {
+          setCurrentCase(fullCase);
+          setSelectedCaseId(fullCase.case_id);
+        } else if (data.length > 0) {
+          setCurrentCase(data[0]);
+          setSelectedCaseId(data[0].case_id);
+        }
+      }
+      if (isManual) {
+        showToast('success', 'Database Synced', `Synchronized ${data.length} cases with local backend.`);
       }
     } catch (err) {
       console.error('Failed to load cases', err);
-      showToast('error', 'Sync Failed', 'Could not load cases from local database.');
+      showToast('error', 'Sync Failed', 'Could not load cases from local database. Check if backend is running.');
     } finally {
       setLoading(false);
     }
   }, [selectedCaseId, showToast]);
 
   useEffect(() => {
-    refreshCases();
+    refreshCases(false);
   }, []);
 
   const loadCase = useCallback(async (id: string) => {
     try {
+      setLoading(true);
       setSelectedCaseId(id);
       const c = await api.getCaseById(id);
       if (c) {
@@ -56,8 +68,27 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (err) {
       console.error('Failed to load case', err);
+    } finally {
+      setLoading(false);
     }
   }, []);
+
+  const runDiagnosis = async (caseId: string) => {
+    try {
+      setLoading(true);
+      const updated = await api.runDiagnosis(caseId);
+      setCases(prev => prev.map(c => c.case_id === updated.case_id ? updated : c));
+      setCurrentCase(updated);
+      showToast('success', 'Diagnosis Complete', `AI analysis & deterministic rule evaluation completed for ${caseId}.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Diagnosis failed';
+      console.error('Diagnosis error', err);
+      showToast('error', 'Diagnosis Failed', msg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const submitReview = async (caseId: string, decision: ReviewDecision) => {
     try {
@@ -187,6 +218,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
         selectedCaseId,
         setSelectedCaseId,
         loadCase,
+        runDiagnosis,
         submitReview,
         approveFix,
         runVerification,

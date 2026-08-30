@@ -6,7 +6,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.api.dependencies import get_db
 from app.services.dashboard_service import evaluation_service
 
 router = APIRouter(prefix="/evaluation", tags=["Evaluation"])

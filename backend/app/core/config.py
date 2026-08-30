@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # CORS — stored as comma-separated string, parsed into list
-    cors_origins: str = "http://localhost:3000,http://localhost:5173,http://localhost:8501"
+    cors_origins: str = "http://localhost:3000,http://localhost:5173,http://localhost:8501,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:8000"
 
     # Security
     secret_key: str = "change-me-in-production"

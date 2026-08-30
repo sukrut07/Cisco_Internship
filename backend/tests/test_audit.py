@@ -57,3 +57,31 @@ def test_audit_trail_chronological_progression(client: TestClient):
     assert "DIAGNOSIS_REQUESTED" in event_types
     assert "AI_DIAGNOSIS_COMPLETED" in event_types
     assert "REVIEW_ACCEPTED" in event_types
+
+
+def test_list_all_audit_logs_paginated(client: TestClient):
+    case_id = "AUDIT-LIST-001"
+    payload = {**SAMPLE_CASE_PAYLOAD, "case_id": case_id}
+    client.post("/api/v1/cases", json=payload)
+
+    resp = client.get("/api/v1/audit/logs?page=1&page_size=10")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "items" in data
+    assert "total" in data
+    assert "page" in data
+    assert data["page"] == 1
+    assert len(data["items"]) >= 1
+
+
+def test_list_all_audit_logs_filtered_by_event_type(client: TestClient):
+    case_id = "AUDIT-FILTER-001"
+    payload = {**SAMPLE_CASE_PAYLOAD, "case_id": case_id}
+    client.post("/api/v1/cases", json=payload)
+
+    resp = client.get("/api/v1/audit/logs?event_type=CASE_CREATED")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] >= 1
+    for item in data["items"]:
+        assert item["event_type"] == "CASE_CREATED"

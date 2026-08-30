@@ -6,7 +6,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.api.dependencies import get_db, verify_api_key
 from app.core.exceptions import ReviewNotFoundError
 from app.schemas.verification import VerificationCreate, VerificationResponse
 from app.services.verification_service import verification_service
@@ -19,6 +19,12 @@ router = APIRouter(tags=["Verification"])
     response_model=VerificationResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Record post-fix verification result",
+)
+@router.post(
+    "/cases/{case_id}/verification",
+    response_model=VerificationResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 def create_verification(
     case_id: str, data: VerificationCreate, db: Session = Depends(get_db)

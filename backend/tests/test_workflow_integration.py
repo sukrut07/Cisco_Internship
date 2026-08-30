@@ -164,3 +164,43 @@ def test_edit_review_workflow_preserves_original_ai(client: TestClient):
     assert data["decision"] == "EDITED"
     assert data["original_ai_diagnosis"]["root_cause"] != data["final_diagnosis"]["root_cause"]
     assert data["final_diagnosis"]["root_cause"] == "Static route next hop IP is transposed"
+
+
+def test_cannot_fix_before_review_approval(client: TestClient):
+    case_id = "ILLEGAL-FIX-001"
+    payload = {**SAMPLE_CASE_PAYLOAD, "case_id": case_id}
+    client.post("/api/v1/cases", json=payload)
+    # Attempting to fix without human review should fail
+    resp = client.post(
+        f"/api/v1/cases/{case_id}/fix",
+        json={
+            "review_id": 9999,
+            "commands": ["no shutdown"],
+            "description": "Attempted fix without review",
+        },
+    )
+    assert resp.status_code in [400, 404, 422]
+
+
+def test_cannot_verify_before_fix_staged(client: TestClient):
+    case_id = "ILLEGAL-VERIF-001"
+    payload = {**SAMPLE_CASE_PAYLOAD, "case_id": case_id}
+    client.post("/api/v1/cases", json=payload)
+    diag_resp = client.post(f"/api/v1/cases/{case_id}/diagnose")
+    diag_id = diag_resp.json()["ai_diagnosis"]["id"]
+    rev_resp = client.post(
+        f"/api/v1/cases/{case_id}/reviews",
+        json={"diagnosis_id": diag_id, "decision": "ACCEPTED", "reviewer": "Bob"},
+    )
+    review_id = rev_resp.json()["id"]
+
+    # Attempting to verify with an invalid/non-existent review or before fix should fail
+    bad_verif = client.post(
+        f"/api/v1/cases/{case_id}/verification",
+        json={
+            "review_id": 999999,
+            "verification_status": "SUCCESS",
+            "verification_method": "PING",
+        },
+    )
+    assert bad_verif.status_code in [400, 404, 422]

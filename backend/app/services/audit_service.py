@@ -52,9 +52,45 @@ class AuditService:
         return (
             db.query(AuditLog)
             .filter(AuditLog.case_id == case_id)
-            .order_by(AuditLog.created_at)
+            .order_by(AuditLog.created_at.asc())
             .all()
         )
+
+    def get_all_audit_logs(
+        self,
+        db: Session,
+        page: int = 1,
+        page_size: int = 50,
+        event_type: str | None = None,
+        case_id: str | None = None,
+        search: str | None = None,
+    ) -> tuple[list[AuditLog], int]:
+        """Return paginated audit log entries with optional filters."""
+        q = db.query(AuditLog)
+
+        if event_type and event_type != "ALL":
+            q = q.filter(AuditLog.event_type == event_type)
+        if case_id:
+            q = q.filter(AuditLog.case_id == case_id.upper())
+        if search:
+            from sqlalchemy import or_
+            q = q.filter(
+                or_(
+                    AuditLog.actor.ilike(f"%{search}%"),
+                    AuditLog.description.ilike(f"%{search}%"),
+                    AuditLog.case_id.ilike(f"%{search}%"),
+                    AuditLog.event_type.ilike(f"%{search}%"),
+                )
+            )
+
+        total = q.count()
+        logs = (
+            q.order_by(AuditLog.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+        return logs, total
 
 
 audit_service = AuditService()

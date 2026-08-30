@@ -27,11 +27,22 @@ import { EvidenceCitation, RuleResult } from '../types';
 
 export const AIWorkbench: React.FC = () => {
   useDocumentTitle('AI Workbench');
-  const { currentCase, loading, submitReview, approveFix } = useCase();
+  const { currentCase, loading, runDiagnosis, submitReview, approveFix } = useCase();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+
+  const handleRunDiagnosis = async () => {
+    if (!currentCase) return;
+    try {
+      setIsDiagnosing(true);
+      await runDiagnosis(currentCase.case_id);
+    } finally {
+      setIsDiagnosing(false);
+    }
+  };
 
   useEffect(() => {
     if (currentCase?.show_outputs) {
@@ -156,8 +167,16 @@ export const AIWorkbench: React.FC = () => {
 
         {/* Status Pill & Flow Progress */}
         <div className="flex flex-col items-start lg:items-end gap-2 shrink-0">
-          <span className="label-caps text-outline">Workflow Lifecycle</span>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleRunDiagnosis}
+              disabled={isDiagnosing}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold font-sans bg-primary-container hover:bg-orange-500 text-white shadow-glow-critical flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
+              title="Execute AI diagnosis and deterministic rule evaluation on current case telemetry"
+            >
+              <Cpu className={`w-3.5 h-3.5 ${isDiagnosing ? 'animate-spin' : ''}`} />
+              <span>{isDiagnosing ? 'Analyzing...' : 'Run AI Diagnosis'}</span>
+            </button>
             <StatusBadge status={currentCase.status} pulse={currentCase.status === 'REVIEW_REQUIRED'} />
           </div>
           <span className="text-[11px] font-mono text-outline">

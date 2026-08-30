@@ -6,7 +6,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.api.dependencies import get_db, verify_api_key
 from app.core.exceptions import (
     DiagnosisNotFoundError,
     InvalidReviewStateError,
@@ -30,6 +30,12 @@ router = APIRouter(tags=["Reviews"])
         "REJECTED: no final diagnosis; AI cannot proceed. "
         "Human review is MANDATORY before any diagnosis becomes final."
     ),
+)
+@router.post(
+    "/cases/{case_id}/reviews",
+    response_model=ReviewResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 def create_review(case_id: str, data: ReviewCreate, db: Session = Depends(get_db)):
     try:

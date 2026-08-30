@@ -79,14 +79,26 @@ _VLAN_PATTERN = re.compile(r"\bvlan\s+(\d+)\b", re.IGNORECASE)
 _IP_NET_PATTERN = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,2})?\b")
 
 
+def _normalize_interface_alias(text: str) -> str:
+    """Normalize interface abbreviations like Gi0/1 -> gigabitethernet0/1."""
+    t = text.lower()
+    t = re.sub(r"\bgigabitethernet\s*", "gi", t)
+    t = re.sub(r"\bfastethernet\s*", "fa", t)
+    t = re.sub(r"\btengigabitethernet\s*", "te", t)
+    t = re.sub(r"\bserial\s*", "se", t)
+    t = re.sub(r"\bloopback\s*", "lo", t)
+    t = re.sub(r"\bvlan\s*", "vl", t)
+    return t
+
+
 def _is_observation_grounded(observation: str, output_text: str) -> bool:
     """
     Perform a multi-signal check to determine if an AI observation is grounded in show output text.
 
     Checks:
     1. Direct substring match (case-insensitive).
-    2. IP addresses / Subnets mentioned in observation must exist in output.
-    3. Interface names mentioned in observation must exist in output.
+    2. Interface alias normalization (Gi0/1 <-> GigabitEthernet0/1).
+    3. IP addresses / Subnets mentioned in observation must exist in output.
     4. VLAN IDs mentioned in observation must exist in output.
     5. Key domain technical terms (down, admin, denied, nat, route, etc.) overlap.
     6. Informative keyword token overlap.
@@ -98,26 +110,31 @@ def _is_observation_grounded(observation: str, output_text: str) -> bool:
     if obs_lower in out_lower:
         return True
 
-    # 2. IP / Subnet check
+    # 2. Interface check with alias normalization
+    norm_obs = _normalize_interface_alias(obs_lower)
+    norm_out = _normalize_interface_alias(out_lower)
+    if norm_obs in norm_out:
+        return True
+
+    obs_ifaces = _IFACE_PATTERN.findall(observation)
+    if obs_ifaces:
+        for iface in obs_ifaces:
+            iface_norm = _normalize_interface_alias(iface).replace(" ", "")
+            if iface_norm in norm_out.replace(" ", ""):
+                return True
+
+    # 3. IP / Subnet check
     obs_ips = _IP_NET_PATTERN.findall(observation)
     if obs_ips:
         for ip in obs_ips:
             if ip.lower() in out_lower:
                 return True
 
-    # 3. Interface check
-    obs_ifaces = _IFACE_PATTERN.findall(observation)
-    if obs_ifaces:
-        for iface in obs_ifaces:
-            norm_iface = re.sub(r"\s+", "", iface.lower())
-            if norm_iface in out_lower.replace(" ", ""):
-                return True
-
     # 4. VLAN check
     obs_vlans = _VLAN_PATTERN.findall(observation)
     if obs_vlans:
         for vlan in obs_vlans:
-            if vlan in out_lower:
+            if vlan in out_lower or f"vlan {vlan}" in out_lower:
                 return True
 
     # 5. Technical status terms check
@@ -138,6 +155,11 @@ def _is_observation_grounded(observation: str, output_text: str) -> bool:
         "no route",
         "directly connected",
         "gateway of last resort",
+        "not configured",
+        "shutdown",
+        "active",
+        "trunk",
+        "access",
     ]
     for phrase in tech_phrases:
         if phrase in obs_lower and phrase in out_lower:

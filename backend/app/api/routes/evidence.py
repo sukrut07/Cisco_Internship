@@ -6,7 +6,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.api.dependencies import get_db
 from app.core.exceptions import CaseNotFoundError
 from app.schemas.evidence import CaseEvidenceResponse
 from app.services.evidence_service import evidence_service

@@ -58,3 +58,15 @@ def verify_api_key(
         )
 
     return provided_key
+
+
+def get_settings_dependency():
+    """Dependency that returns application settings."""
+    return get_settings()
+
+
+def get_current_user_or_anonymous(
+    api_key: Optional[str] = Depends(verify_api_key),
+) -> str:
+    """Return identity of the current user/actor (or 'anonymous'/'api')."""
+    return api_key or "anonymous"

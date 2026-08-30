@@ -40,13 +40,22 @@ export const AuditLogPage: React.FC = () => {
 
   const actionIcons: Record<string, React.ReactNode> = {
     CASE_CREATED: <Terminal className="w-4 h-4 text-secondary" />,
+    DIAGNOSIS_REQUESTED: <Cpu className="w-4 h-4 text-primary" />,
+    RULE_CHECK_COMPLETED: <ShieldCheck className="w-4 h-4 text-amber-400" />,
+    AI_DIAGNOSIS_COMPLETED: <Cpu className="w-4 h-4 text-primary-container" />,
+    COMPARISON_COMPLETED: <AlertTriangle className="w-4 h-4 text-amber-400" />,
+    REVIEW_ACCEPTED: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
+    REVIEW_EDITED: <FileCheck className="w-4 h-4 text-amber-300" />,
+    REVIEW_REJECTED: <AlertTriangle className="w-4 h-4 text-red-400" />,
+    FIX_RECORDED: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
+    VERIFICATION_COMPLETED: <Play className="w-4 h-4 text-cyan-400" />,
+    // Legacy / alias support
     RULE_ENGINE_EVALUATED: <ShieldCheck className="w-4 h-4 text-amber-400" />,
     DIAGNOSIS_GENERATED: <Cpu className="w-4 h-4 text-primary-container" />,
-    REVIEW_STARTED: <AlertTriangle className="w-4 h-4 text-amber-400" />,
     REVIEW_DECISION_RECORDED: <FileCheck className="w-4 h-4 text-emerald-400" />,
     FIX_PLAN_APPROVED: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
     VERIFICATION_EXECUTED: <Play className="w-4 h-4 text-cyan-400" />,
-    CASE_RESOLVED: <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+    CASE_RESOLVED: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
   };
 
   const filteredLogs = logs.filter(log => {
@@ -102,11 +111,15 @@ export const AuditLogPage: React.FC = () => {
           >
             <option value="ALL">All Event Types</option>
             <option value="CASE_CREATED">CASE_CREATED</option>
-            <option value="RULE_ENGINE_EVALUATED">RULE_ENGINE_EVALUATED</option>
-            <option value="DIAGNOSIS_GENERATED">DIAGNOSIS_GENERATED</option>
-            <option value="REVIEW_DECISION_RECORDED">REVIEW_DECISION_RECORDED</option>
-            <option value="FIX_PLAN_APPROVED">FIX_PLAN_APPROVED</option>
-            <option value="CASE_RESOLVED">CASE_RESOLVED</option>
+            <option value="DIAGNOSIS_REQUESTED">DIAGNOSIS_REQUESTED</option>
+            <option value="RULE_CHECK_COMPLETED">RULE_CHECK_COMPLETED</option>
+            <option value="AI_DIAGNOSIS_COMPLETED">AI_DIAGNOSIS_COMPLETED</option>
+            <option value="COMPARISON_COMPLETED">COMPARISON_COMPLETED</option>
+            <option value="REVIEW_ACCEPTED">REVIEW_ACCEPTED</option>
+            <option value="REVIEW_EDITED">REVIEW_EDITED</option>
+            <option value="REVIEW_REJECTED">REVIEW_REJECTED</option>
+            <option value="FIX_RECORDED">FIX_RECORDED</option>
+            <option value="VERIFICATION_COMPLETED">VERIFICATION_COMPLETED</option>
           </select>
         </div>
       </GlassPanel>

@@ -26,7 +26,7 @@ export const SideNavBar: React.FC = () => {
 
   const handleSync = async () => {
     setSyncing(true);
-    await refreshCases();
+    await refreshCases(true);
     setTimeout(() => setSyncing(false), 500);
   };
 

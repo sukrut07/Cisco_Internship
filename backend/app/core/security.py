@@ -35,9 +35,15 @@ def normalize_command_name(cmd: str) -> str:
     """
     Normalize a Cisco show-command name for consistent dictionary keys.
 
-    Example: 'SHOW IP ROUTE' → 'show ip route'
+    Example:
+      'SHOW IP ROUTE' → 'show ip route'
+      'R1: show ip route' → 'show ip route'
+      'SW1# show vlan brief' → 'show vlan brief'
     """
-    return re.sub(r"\s+", " ", cmd.strip().lower())
+    c = cmd.strip()
+    # Strip prompt prefix e.g. "R1: ", "R1#", "Router(config)#", "SW1>"
+    c = re.sub(r"^[a-zA-Z0-9\-_.]+\s*[:#>]+\s*", "", c)
+    return re.sub(r"\s+", " ", c.strip().lower())
 
 
 def is_safe_case_id(case_id: str) -> bool:
